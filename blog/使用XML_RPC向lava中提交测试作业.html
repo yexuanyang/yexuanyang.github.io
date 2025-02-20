@@ -1,0 +1,99 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charSet="utf-8" data-next-head=""/><meta name="viewport" content="width=device-width" data-next-head=""/><meta charSet="utf-8"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/><link rel="preload" href="/yexuanyang.github.io/_next/static/css/87c5501326a0a136.css" as="style"/><link rel="stylesheet" href="/yexuanyang.github.io/_next/static/css/87c5501326a0a136.css" data-n-g=""/><link rel="preload" href="/yexuanyang.github.io/_next/static/css/be6283f520727b8c.css" as="style"/><link rel="stylesheet" href="/yexuanyang.github.io/_next/static/css/be6283f520727b8c.css" data-n-p=""/><noscript data-n-css=""></noscript><script defer="" nomodule="" src="/yexuanyang.github.io/_next/static/chunks/polyfills-42372ed130431b0a.js"></script><script src="/yexuanyang.github.io/_next/static/chunks/webpack-89cc67d438c668f8.js" defer=""></script><script src="/yexuanyang.github.io/_next/static/chunks/framework-b96261d959dd50e7.js" defer=""></script><script src="/yexuanyang.github.io/_next/static/chunks/main-4dcb94b69233d603.js" defer=""></script><script src="/yexuanyang.github.io/_next/static/chunks/pages/_app-0203a97b51327b56.js" defer=""></script><script src="/yexuanyang.github.io/_next/static/chunks/106-a71b11894cb18610.js" defer=""></script><script src="/yexuanyang.github.io/_next/static/chunks/pages/blog/%5Bid%5D-de3cde25ea3e1e92.js" defer=""></script><script src="/yexuanyang.github.io/_next/static/wYmZMMSk4WgjCxaHAZXIB/_buildManifest.js" defer=""></script><script src="/yexuanyang.github.io/_next/static/wYmZMMSk4WgjCxaHAZXIB/_ssgManifest.js" defer=""></script></head><body><div id="__next"><div class="layout"><header class="nav"><div class="nav-container"><a href="/" class="nav-brand">我的博客</a><div class="nav-links"><a href="/" class="nav-link">首页</a><a href="/blog" class="nav-link">文章</a><a href="/categories" class="nav-link">分类</a><a href="/about" class="nav-link">关于我</a></div></div></header><main><article class="article_container__uEGY_"><header class="article_header__Dfu8i"><h1 class="article_title__Kemkb">使用 XML-RPC 向 LAVA 提交测试作业</h1><div class="article_meta__EQMJH"><span class="article_date__8Zsel">2024-01-13</span><a class="article_category__FEprG" href="/yexuanyang.github.io/articles?category=%E6%B5%8B%E8%AF%95%E5%BC%80%E5%8F%91">测试开发</a><span class="ViewCounter_viewCount__CArR4">--</span></div><div class="article_tags__SeZQL"><a class="article_tag__xFxqV" href="/yexuanyang.github.io/articles?tag=LAVA">#<!-- -->LAVA</a><a class="article_tag__xFxqV" href="/yexuanyang.github.io/articles?tag=XML-RPC">#<!-- -->XML-RPC</a><a class="article_tag__xFxqV" href="/yexuanyang.github.io/articles?tag=%E8%87%AA%E5%8A%A8%E5%8C%96%E6%B5%8B%E8%AF%95">#<!-- -->自动化测试</a><a class="article_tag__xFxqV" href="/yexuanyang.github.io/articles?tag=Python">#<!-- -->Python</a></div></header><div class="article_content__xXtEi"><h1>使用XML-RPC向lava中提交测试作业</h1>
+<ol>
+<li>
+<p>访问lava集群的web页面，点开API中的<code>Available Methods</code>可以看到XML-RPC支持的所有方法，里面有一个方法是scheduler.jobs.submit，如果集群部署在<code>10.161.28.28:9999</code>那么访问<code>http://10.161.28.28:9999/api/help/</code>可以看到所有的API</p>
+</li>
+<li>
+<p>查看目前有的token，访问<code>http://10.161.28.28:9999/api/tokens/</code>，选一个用来做XML_RPC</p>
+</li>
+<li>
+<p>编写要提交的任务<code>basic.yaml</code>：</p>
+<pre><code class="language-yaml"> device_type: qemu
+ job_name: RROS_TEST test basic_bash.yaml
+
+ timeouts:
+ job:
+     minutes: 15
+ action:
+     minutes: 5
+ connection:
+     minutes: 2
+ priority: medium
+ visibility: public
+ context:
+ arch: aarch64
+ memory: 2048
+ guestfs_interface: virtio
+ machine: virt
+ cpu: cortex-a57
+ extra_options:
+ - -smp 1
+ - -device virtio-blk-device,drive=hd0
+ - -append "console=ttyAMA0 root=/dev/vda2 rw"
+
+ actions: 
+ - deploy:
+     timeout: 
+     minutes: 5
+     to: tmpfs
+     images:
+     kernel:
+         image_arg: -kernel {kernel}
+         url: file:///data/user_home/yyx/images/rros_arch_jenkins/arm64/boot/Image
+     rootfs:
+         image_arg: -drive if=none,file={rootfs},id=hd0,format=raw
+         url: file:///data/user_home/yyx/images/lhy_2022-01-28-raspios-bullseye-arm64_poll.img
+ - boot:
+     method: qemu
+     media: tmpfs
+     timeout:
+     minutes: 5
+     auto_login:
+     login_prompt: "raspberrypi login:"
+     username: root
+     password_prompt: "Password:"
+     password: 519ailab
+     prompts:
+     - "root@raspberrypi:"
+ - test:
+     timeout:
+     minutes: 5
+     definitions:
+     - repository: https://github.com/yexuanyang/my_pipeline.git
+     from: git
+     path: basic_bash.yaml
+     name: basic-bash
+</code></pre>
+<p>其中test下的basic_bash.yaml是lava中的test defination，内容如下：</p>
+<pre><code class="language-yaml"> metadata:
+ format: Lava-Test Test Defination 1.0
+ name: basic-bash
+ description: "Basic (Level 1) Test basic bash in RROS"
+ maintainer:
+     - myemailyyxg@gmail.com
+
+ run:
+ steps:
+     - lava-test-case test-pwd --shell pwd
+     - lava-test-case test-ls --shell ls $(pwd)
+     - chmod +x basic_bash.sh
+     - lava-test-case test-script --shell ./basic_bash.sh
+</code></pre>
+</li>
+<li>
+<p>编写python脚本：</p>
+<pre><code class="language-python"> # Python3
+ import yaml
+ import xmlrpc.client
+
+ with open('basic.yaml') as f:
+     config = yaml.dump(yaml.load(f, yaml.FullLoader))
+     server=xmlrpc.client.ServerProxy("http://admin:longrandomtokenadmin@10.161.28.28:9999/RPC2/")
+     jobid=server.scheduler.submit_job(config)
+</code></pre>
+</li>
+<li>
+<p>运行这个脚本即可向lava集群提交一个新的job</p>
+</li>
+</ol>
+</div><footer class="article_footer__5JN_G"><div class="article_navigation__fJhBJ"><a class="article_backButton__FZQSF" href="/yexuanyang.github.io/blog">返回文章列表</a></div></footer></article></main><footer class="footer"><p>© 2024 个人博客. All rights reserved.</p></footer></div></div><script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"article":{"id":"使用XML_RPC向lava中提交测试作业","contentHtml":"\u003ch1\u003e使用XML-RPC向lava中提交测试作业\u003c/h1\u003e\n\u003col\u003e\n\u003cli\u003e\n\u003cp\u003e访问lava集群的web页面，点开API中的\u003ccode\u003eAvailable Methods\u003c/code\u003e可以看到XML-RPC支持的所有方法，里面有一个方法是scheduler.jobs.submit，如果集群部署在\u003ccode\u003e10.161.28.28:9999\u003c/code\u003e那么访问\u003ccode\u003ehttp://10.161.28.28:9999/api/help/\u003c/code\u003e可以看到所有的API\u003c/p\u003e\n\u003c/li\u003e\n\u003cli\u003e\n\u003cp\u003e查看目前有的token，访问\u003ccode\u003ehttp://10.161.28.28:9999/api/tokens/\u003c/code\u003e，选一个用来做XML_RPC\u003c/p\u003e\n\u003c/li\u003e\n\u003cli\u003e\n\u003cp\u003e编写要提交的任务\u003ccode\u003ebasic.yaml\u003c/code\u003e：\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-yaml\"\u003e device_type: qemu\r\n job_name: RROS_TEST test basic_bash.yaml\r\n\r\n timeouts:\r\n job:\r\n     minutes: 15\r\n action:\r\n     minutes: 5\r\n connection:\r\n     minutes: 2\r\n priority: medium\r\n visibility: public\r\n context:\r\n arch: aarch64\r\n memory: 2048\r\n guestfs_interface: virtio\r\n machine: virt\r\n cpu: cortex-a57\r\n extra_options:\r\n - -smp 1\r\n - -device virtio-blk-device,drive=hd0\r\n - -append \"console=ttyAMA0 root=/dev/vda2 rw\"\r\n\r\n actions: \r\n - deploy:\r\n     timeout: \r\n     minutes: 5\r\n     to: tmpfs\r\n     images:\r\n     kernel:\r\n         image_arg: -kernel {kernel}\r\n         url: file:///data/user_home/yyx/images/rros_arch_jenkins/arm64/boot/Image\r\n     rootfs:\r\n         image_arg: -drive if=none,file={rootfs},id=hd0,format=raw\r\n         url: file:///data/user_home/yyx/images/lhy_2022-01-28-raspios-bullseye-arm64_poll.img\r\n - boot:\r\n     method: qemu\r\n     media: tmpfs\r\n     timeout:\r\n     minutes: 5\r\n     auto_login:\r\n     login_prompt: \"raspberrypi login:\"\r\n     username: root\r\n     password_prompt: \"Password:\"\r\n     password: 519ailab\r\n     prompts:\r\n     - \"root@raspberrypi:\"\r\n - test:\r\n     timeout:\r\n     minutes: 5\r\n     definitions:\r\n     - repository: https://github.com/yexuanyang/my_pipeline.git\r\n     from: git\r\n     path: basic_bash.yaml\r\n     name: basic-bash\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e其中test下的basic_bash.yaml是lava中的test defination，内容如下：\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-yaml\"\u003e metadata:\r\n format: Lava-Test Test Defination 1.0\r\n name: basic-bash\r\n description: \"Basic (Level 1) Test basic bash in RROS\"\r\n maintainer:\r\n     - myemailyyxg@gmail.com\r\n\r\n run:\r\n steps:\r\n     - lava-test-case test-pwd --shell pwd\r\n     - lava-test-case test-ls --shell ls $(pwd)\r\n     - chmod +x basic_bash.sh\r\n     - lava-test-case test-script --shell ./basic_bash.sh\n\u003c/code\u003e\u003c/pre\u003e\n\u003c/li\u003e\n\u003cli\u003e\n\u003cp\u003e编写python脚本：\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-python\"\u003e # Python3\r\n import yaml\r\n import xmlrpc.client\r\n\r\n with open('basic.yaml') as f:\r\n     config = yaml.dump(yaml.load(f, yaml.FullLoader))\r\n     server=xmlrpc.client.ServerProxy(\"http://admin:longrandomtokenadmin@10.161.28.28:9999/RPC2/\")\r\n     jobid=server.scheduler.submit_job(config)\n\u003c/code\u003e\u003c/pre\u003e\n\u003c/li\u003e\n\u003cli\u003e\n\u003cp\u003e运行这个脚本即可向lava集群提交一个新的job\u003c/p\u003e\n\u003c/li\u003e\n\u003c/ol\u003e\n","title":"使用 XML-RPC 向 LAVA 提交测试作业","date":"2024-01-13","category":"测试开发","tags":["LAVA","XML-RPC","自动化测试","Python"],"summary":"介绍如何使用 XML-RPC 接口向 LAVA 测试集群提交测试作业，包括配置文件编写和 Python 脚本实现。","views":0}},"__N_SSG":true},"page":"/blog/[id]","query":{"id":"使用XML_RPC向lava中提交测试作业"},"buildId":"wYmZMMSk4WgjCxaHAZXIB","assetPrefix":"/yexuanyang.github.io","isFallback":false,"gsp":true,"scriptLoader":[]}</script></body></html>
