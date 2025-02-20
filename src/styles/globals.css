@@ -1,9 +1,11 @@
-/* 从现有的样式中提取并整理 */
+/* 全局基础样式 */
 body {
     font-family: 'Microsoft YaHei', sans-serif;
     margin: 0;
     padding: 0;
     background-color: #f5f5f5;
+    color: #333;
+    line-height: 1.6;
 }
 
 .container {
@@ -48,6 +50,9 @@ body {
     background-color: #333;
     padding: 1rem 0;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
 .nav-container {
@@ -91,6 +96,109 @@ body {
     margin-top: 40px;
     background-color: #f8f9fa;
     border-top: 1px solid #eee;
+    width: 100%;
 }
 
-/* ... 其他全局样式 ... */ 
+/* 头部样式 */
+.header {
+    background-color: #fff;
+    padding: 1rem 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* 文章列表样式 */
+.article-list {
+    display: grid;
+    gap: 20px;
+    padding: 20px;
+}
+
+.article-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+}
+
+.article-card:hover {
+    transform: translateY(-3px);
+}
+
+/* 侧边栏样式 */
+.sidebar {
+    width: 300px;
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .sidebar {
+        width: 100%;
+        margin-top: 20px;
+    }
+    
+    .article-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 按钮和链接样式 */
+.btn {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 4px;
+    background-color: #007bff;
+    color: #fff;
+    text-decoration: none;
+    transition: background-color 0.3s;
+}
+
+.btn:hover {
+    background-color: #0056b3;
+}
+
+/* 标题样式 */
+h1, h2, h3, h4, h5, h6 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+/* 文章内容样式 */
+.article-content {
+    line-height: 1.8;
+    font-size: 1.1rem;
+}
+
+.article-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: 1rem 0;
+}
+
+.article-content pre {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+/* ... 其他全局样式 ... */
