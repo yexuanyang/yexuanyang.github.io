@@ -5,12 +5,14 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "deploy": "gh-pages -d out --dotfiles",
     "start": "next start"
   },
   "dependencies": {
     "ejs": "^3.1.10",
     "express": "^4.17.1",
     "fs": "^0.0.1-security",
+    "gh-pages": "^6.3.0",
     "gray-matter": "^4.0.3",
     "next": "^15.1.7",
     "react": "^18.2.0",
