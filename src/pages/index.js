@@ -3,7 +3,7 @@ import Background from '../components/Background';
 import Ferris from '../components/Ferris';
 import { getArticles } from '../lib/api';
 import Link from 'next/link';
-import styles from './home.module.css';
+
 import ViewCounter from '../components/ViewCounter';
 
 const Home = ({ articles = [] }) => {
@@ -21,37 +21,37 @@ const Home = ({ articles = [] }) => {
     return (
         <Layout>
             <Background />
-            <div className={styles.container}>
-                <div className={styles.hero}>
+            <div className="home-container">
+                <div className="home-hero">
                     <h1>欢迎来到我的博客</h1>
-                    <p className="description">
+                    <p className="home-description">
                         这里是我分享技术、生活和想法的地方。<br/>
                         希望能与你一起探讨、学习、成长。
                     </p>
-                    <Link href="/blog" className="cta-button">浏览文章</Link>
+                    <Link href="/blog" className="home-cta-button">浏览文章</Link>
                 </div>
 
                 {recentArticles.length > 0 && (
-                    <section className={styles.recentArticles}>
-                        <h2 className={styles.sectionTitle}>最近更新</h2>
-                        <div className={styles.articlesGrid}>
+                    <section className="home-recent-articles">
+                        <h2 className="home-section-title">最近更新</h2>
+                        <div className="home-articles-grid">
                             {recentArticles.map(article => (
-                                <article key={article.id} className={styles.articleCard}>
-                                    <h3 className={styles.articleTitle}>
-                                        <Link href={`/blog/${article.id}`} className={styles.articleTitle}>{article.title}</Link>
+                                <article key={article.id} className="home-article-card">
+                                    <h3 className="home-article-title">
+                                        <Link href={`/blog/${article.id}`}>{article.title}</Link>
                                     </h3>
-                                    <div className={styles.articleMeta}>
-                                        <span className={styles.date}>{article.date}</span>
-                                        <span className={styles.category}>{article.category}</span>
+                                    <div className="home-article-meta">
+                                        <span>{article.date}</span>
+                                        <span>{article.category}</span>
                                         <ViewCounter articleId={article.id} />
                                     </div>
-                                    <p className={styles.summary}>{article.summary}</p>
-                                    <div className={styles.tags}>
+                                    <p className="summary">{article.summary}</p>
+                                    <div className="home-tags">
                                         {article.tags.map(tag => (
                                             <Link 
                                                 key={tag} 
                                                 href={`/articles?tag=${encodeURIComponent(tag)}`}
-                                                className={styles.tag}
+                                                className="home-tag"
                                             >#{tag}</Link>
                                         ))}
                                     </div>
