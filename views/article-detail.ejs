@@ -1,0 +1,103 @@
+<%- include('layouts/header', {title: article.title}) %>
+
+<div class="container">
+    <article class="article-detail">
+        <header class="article-header">
+            <h1><%= article.title %></h1>
+            <div class="article-meta">
+                <span class="date">发布于 <%= article.date %></span>
+                <span class="category">分类：<%= article.category %></span>
+            </div>
+        </header>
+        
+        <div class="article-content">
+            <%= article.content %>
+        </div>
+
+        <div class="article-tags">
+            <% article.tags.forEach(tag => { %>
+                <span class="tag"><%= tag %></span>
+            <% }); %>
+        </div>
+    </article>
+
+    <div class="article-navigation">
+        <% if (article.id > 1) { %>
+            <a href="/articles/<%= article.id - 1 %>" class="prev-article">上一篇</a>
+        <% } %>
+        <% if (article.id < totalArticles) { %>
+            <a href="/articles/<%= article.id + 1 %>" class="next-article">下一篇</a>
+        <% } %>
+    </div>
+</div>
+
+<style>
+    .article-detail {
+        background: white;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .article-header {
+        margin-bottom: 30px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 20px;
+    }
+    
+    .article-header h1 {
+        margin: 0 0 15px 0;
+        font-size: 2.2em;
+        color: #333;
+    }
+    
+    .article-meta {
+        color: #666;
+        font-size: 0.9em;
+    }
+    
+    .article-meta span {
+        margin-right: 20px;
+    }
+    
+    .article-content {
+        line-height: 1.8;
+        color: #444;
+        font-size: 1.1em;
+        margin-bottom: 30px;
+    }
+    
+    .article-tags {
+        margin: 30px 0;
+    }
+    
+    .tag {
+        display: inline-block;
+        background: #f0f0f0;
+        padding: 5px 10px;
+        border-radius: 4px;
+        margin-right: 10px;
+        color: #666;
+        font-size: 0.9em;
+    }
+    
+    .article-navigation {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 40px;
+        padding: 20px 0;
+        border-top: 1px solid #eee;
+    }
+    
+    .prev-article, .next-article {
+        color: #007bff;
+        text-decoration: none;
+        padding: 10px 20px;
+        background: white;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+</style>
+
+<%- include('layouts/footer') %> 

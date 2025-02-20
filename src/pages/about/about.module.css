@@ -1,0 +1,148 @@
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.content {
+    background: white;
+    border-radius: 12px;
+    padding: 40px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.avatarContainer {
+    margin-bottom: 20px;
+}
+
+.avatar {
+    border-radius: 50%;
+    border: 4px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.name {
+    font-size: 2em;
+    color: #333;
+    margin: 10px 0;
+}
+
+.bio {
+    color: #666;
+    font-size: 1.2em;
+    margin: 10px 0;
+}
+
+.social {
+    margin-top: 20px;
+}
+
+.socialLink {
+    display: inline-block;
+    margin: 0 10px;
+    color: #666;
+    font-size: 1.5em;
+    transition: color 0.3s;
+}
+
+.socialLink:hover {
+    color: #007bff;
+}
+
+.section {
+    margin: 40px 0;
+    padding-top: 40px;
+    border-top: 1px solid #eee;
+}
+
+.sectionTitle {
+    color: #333;
+    font-size: 1.8em;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.sectionContent {
+    color: #444;
+    line-height: 1.8;
+}
+
+.sectionContent p {
+    margin-bottom: 15px;
+}
+
+.skills {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+}
+
+.skillCategory h3 {
+    color: #333;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+.skillTags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.skillTag {
+    background: #f0f0f0;
+    color: #666;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    transition: all 0.3s;
+}
+
+.skillTag:hover {
+    background: #007bff;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.contact {
+    color: #444;
+    line-height: 1.8;
+}
+
+.contactList {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+}
+
+.contactList li {
+    margin: 10px 0;
+}
+
+.contactList a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.contactList a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 20px;
+    }
+
+    .content {
+        padding: 30px 20px;
+    }
+
+    .skills {
+        grid-template-columns: 1fr;
+    }
+} 

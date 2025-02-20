@@ -1,0 +1,44 @@
+.articlesGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.articleCard {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.articleCard h2 {
+    margin: 0 0 10px 0;
+    font-size: 1.4em;
+}
+
+.articleCard h2 a {
+    color: #333;
+    text-decoration: none;
+}
+
+.articleMeta {
+    color: #666;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+.date, .category {
+    margin-right: 15px;
+}
+
+.summary {
+    color: #444;
+    line-height: 1.5;
+}
+
+.readMore {
+    display: inline-block;
+    margin-top: 10px;
+    color: #007bff;
+    text-decoration: none;
+} 

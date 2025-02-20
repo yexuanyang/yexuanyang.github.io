@@ -1,0 +1,138 @@
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.header {
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+.title {
+    font-size: 2.5em;
+    color: #333;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.meta {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.date, .category {
+    display: flex;
+    align-items: center;
+}
+
+.date::before {
+    content: '\f073';
+    font-family: 'Font Awesome 5 Free';
+    margin-right: 5px;
+}
+
+.category {
+    color: #007bff;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.category:hover {
+    color: #0056b3;
+}
+
+.category::before {
+    content: '\f07b';
+    font-family: 'Font Awesome 5 Free';
+    margin-right: 5px;
+}
+
+.tags {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.tag {
+    color: #666;
+    text-decoration: none;
+    font-size: 0.9em;
+    transition: color 0.3s;
+}
+
+.tag:hover {
+    color: #007bff;
+}
+
+.content {
+    color: #444;
+    line-height: 1.8;
+    font-size: 1.1em;
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.backButton {
+    display: inline-flex;
+    align-items: center;
+    color: #666;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.backButton:hover {
+    color: #007bff;
+}
+
+.backButton i {
+    margin-right: 8px;
+}
+
+.errorMessage {
+    text-align: center;
+    padding: 40px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    color: #666;
+    font-size: 1.2em;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 20px;
+    }
+
+    .title {
+        font-size: 2em;
+    }
+
+    .content {
+        padding: 20px;
+    }
+
+    .meta {
+        flex-direction: column;
+        gap: 10px;
+    }
+} 

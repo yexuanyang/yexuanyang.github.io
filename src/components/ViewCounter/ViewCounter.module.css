@@ -1,0 +1,11 @@
+.viewCount {
+    display: inline-flex;
+    align-items: center;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.viewCount i {
+    margin-right: 5px;
+    color: #999;
+} 
