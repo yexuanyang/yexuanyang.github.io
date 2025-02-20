@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    output: 'export',
     webpack: (config, { isServer }) => {
         if (!isServer) {
             // 在客户端构建时不包含这些模块
@@ -13,4 +12,4 @@ const nextConfig = {
     }
 };
 
-module.exports = nextConfig; 
+module.exports = nextConfig;

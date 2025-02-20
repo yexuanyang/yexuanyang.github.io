@@ -3,8 +3,9 @@ import Document, { Html, Head, Main, NextScript } from 'next/document';
 class MyDocument extends Document {
     render() {
         return (
-            <Html>
+            <Html lang="zh-CN">
                 <Head>
+                    <meta charSet="utf-8" />
                     <link
                         rel="stylesheet"
                         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
@@ -19,4 +20,4 @@ class MyDocument extends Document {
     }
 }
 
-export default MyDocument; 
+export default MyDocument;
