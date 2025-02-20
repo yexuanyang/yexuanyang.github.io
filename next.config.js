@@ -1,15 +1,15 @@
 /** @type {import('next').NextConfig} */
+const repo = "yexuanyang.github.io";
+const assetPrefix = `/${repo}/`;
+const basePath = `/${repo}`;
 const nextConfig = {
-    webpack: (config, { isServer }) => {
-        if (!isServer) {
-            // 在客户端构建时不包含这些模块
-            config.resolve.fallback = {
-                fs: false,
-                path: false
-            };
-        }
-        return config;
-    }
+    reactStrictMode: true,
+    output: "export",
+    basePath,
+    assetPrefix,
+    images: {
+        unoptimized: true,
+    },
 };
 
 module.exports = nextConfig;

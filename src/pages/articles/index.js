@@ -2,22 +2,25 @@ import Layout from '../../components/Layout';
 import Sidebar from '../../components/Sidebar';
 import ArticlesList from '../../components/ArticlesList';
 import { getArticles } from '../../lib/api';
+import { useRouter } from 'next/router';
 import styles from './articles.module.css';
 
-const Articles = ({ query, articles }) => {
+const Articles = ({ articles }) => {
+    const router = useRouter();
+    const { category, tag } = router.query;
     let filteredArticles = articles || [];
     let pageTitle = '所有文章';
 
     // 根据分类筛选
-    if (query.category) {
-        filteredArticles = filteredArticles.filter(article => article.category === query.category);
-        pageTitle = `${query.category} 分类下的文章`;
+    if (category) {
+        filteredArticles = filteredArticles.filter(article => article.category === category);
+        pageTitle = `${category} 分类下的文章`;
     }
 
     // 根据标签筛选
-    if (query.tag) {
-        filteredArticles = filteredArticles.filter(article => article.tags.includes(query.tag));
-        pageTitle = `标签：${query.tag}`;
+    if (tag) {
+        filteredArticles = filteredArticles.filter(article => article.tags.includes(tag));
+        pageTitle = `标签：${tag}`;
     }
 
     return (
@@ -25,8 +28,8 @@ const Articles = ({ query, articles }) => {
             <div className={styles.pageContainer}>
                 <Sidebar 
                     articles={articles} 
-                    currentCategory={query.category}
-                    currentTag={query.tag}
+                    currentCategory={category}
+                    currentTag={tag}
                 />
                 <main className={styles.mainContent}>
                     <h1 className={styles.pageTitle}>{pageTitle}</h1>
@@ -43,17 +46,13 @@ const Articles = ({ query, articles }) => {
     );
 };
 
-// 获取服务端参数
-export async function getServerSideProps({ query }) {
+// 静态生成页面
+export async function getStaticProps() {
     try {
         const articles = await getArticles();
         return {
             props: { 
-                articles: articles || [],
-                query: {
-                    category: query.category || null,
-                    tag: query.tag || null
-                }
+                articles: articles || []
             }
         };
     } catch (error) {
