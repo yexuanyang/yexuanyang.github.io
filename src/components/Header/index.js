@@ -2,7 +2,7 @@ const Header = () => {
     return (
         <header className="nav">
             <div className="nav-container">
-                <a href="/" className="nav-brand">我的博客</a>
+                <a href="/" className="nav-brand">人生何处不青山</a>
                 <div className="nav-links">
                     <a href="/" className="nav-link">首页</a>
                     <a href="/blog" className="nav-link">文章</a>

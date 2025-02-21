@@ -1,4 +1,10 @@
-# Kconfig/KBuild in Linux​  
+---
+title: 'Kconfig/KBuild in Linux​  '
+date: '2024-5-12'
+category: 'Linux'
+tags: ['Linux', 'Kconfig', 'KBuild']
+summary: '介绍linux使用的Kconfig和Kbuild系统'
+--- 
 
 ## 问题  
 
