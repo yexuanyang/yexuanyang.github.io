@@ -13,9 +13,11 @@ const Sidebar = ({ articles = [], currentCategory, currentTag }) => {
 
     // 计算每个标签的文章数量
     const tagCount = articlesList.reduce((acc, article) => {
-        article.tags.forEach(tag => {
-            acc[tag] = (acc[tag] || 0) + 1;
-        });
+        if (article.tags && Array.isArray(article.tags)) {
+            article.tags.forEach(tag => {
+                acc[tag] = (acc[tag] || 0) + 1;
+            });
+        }
         return acc;
     }, {});
 

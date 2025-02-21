@@ -26,7 +26,7 @@ const ArticlePage = ({ article }) => {
                         <Link href={`/articles?category=${encodeURIComponent(article.category)}`} className={styles.category}>{article.category}</Link>
                     </div>
                     <div className={styles.tags}>
-                        {article.tags.map(tag => (
+                        {article.tags && Array.isArray(article.tags) && article.tags.map(tag => (
                             <Link 
                                 key={tag} 
                                 href={`/articles?tag=${encodeURIComponent(tag)}`}
