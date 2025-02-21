@@ -2,7 +2,7 @@
 title: '使用 Docker 搭建 LAVA 测试集群'
 date: '2024-01-12'
 category: '测试开发'
-tags: ['Docker', 'LAVA', '测试集群', '自动化测试']
+tags: ['Docker', 'LAVA', '自动化测试']
 summary: '详细介绍如何使用 Docker 和 docker-compose 搭建 LAVA 测试集群，包括配置文件的编写和集群的启动过程。'
 ---
 
