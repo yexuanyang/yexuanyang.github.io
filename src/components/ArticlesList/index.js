@@ -1,4 +1,3 @@
-import ViewCounter from '../ViewCounter';
 import styles from './ArticlesList.module.css';
 import Link from 'next/link';
 
@@ -14,7 +13,6 @@ const ArticlesList = ({ articles = [] }) => {
                     <div className={styles.articleMeta}>
                         <span className={styles.date}>{article.date}</span>
                         <span className={styles.category}>{article.category}</span>
-                        <ViewCounter articleId={article.id} />
                     </div>
                     <p className={styles.summary}>{article.summary}</p>
                     <Link href={`/blog/${article.id}`} className={styles.readMore}>阅读更多</Link>

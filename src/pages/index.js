@@ -4,8 +4,6 @@ import Ferris from '../components/Ferris';
 import { getArticles } from '../lib/api';
 import Link from 'next/link';
 
-import ViewCounter from '../components/ViewCounter';
-
 const Home = ({ articles = [] }) => {
     // 获取最近一周的文章
     const oneWeekAgo = new Date();
@@ -43,7 +41,6 @@ const Home = ({ articles = [] }) => {
                                     <div className="home-article-meta">
                                         <span>{article.date}</span>
                                         <span>{article.category}</span>
-                                        <ViewCounter articleId={article.id} />
                                     </div>
                                     <p className="summary">{article.summary}</p>
                                     <div className="home-tags">

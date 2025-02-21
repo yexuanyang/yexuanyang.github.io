@@ -1,6 +1,5 @@
 import Layout from '../../components/Layout';
 import { getPostById, getAllPostIds } from '../../lib/mdx';
-import ViewCounter from '../../components/ViewCounter';
 import Link from 'next/link';
 import styles from './article.module.css';
 
@@ -25,7 +24,6 @@ const ArticlePage = ({ article }) => {
                     <div className={styles.meta}>
                         <span className={styles.date}>{article.date}</span>
                         <Link href={`/articles?category=${encodeURIComponent(article.category)}`} className={styles.category}>{article.category}</Link>
-                        <ViewCounter articleId={article.id} />
                     </div>
                     <div className={styles.tags}>
                         {article.tags.map(tag => (
