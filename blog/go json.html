@@ -1,0 +1,613 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charSet="utf-8" data-next-head=""/><meta name="viewport" content="width=device-width, initial-scale=1" data-next-head=""/><meta charSet="utf-8"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/><link rel="preload" href="/_next/static/css/71c3005585daf34a.css" as="style"/><link rel="stylesheet" href="/_next/static/css/71c3005585daf34a.css" data-n-g=""/><link rel="preload" href="/_next/static/css/d30dc8bfc45a058b.css" as="style"/><link rel="stylesheet" href="/_next/static/css/d30dc8bfc45a058b.css" data-n-p=""/><noscript data-n-css=""></noscript><script defer="" nomodule="" src="/_next/static/chunks/polyfills-42372ed130431b0a.js"></script><script src="/_next/static/chunks/webpack-8cac0b4b405cede1.js" defer=""></script><script src="/_next/static/chunks/framework-b96261d959dd50e7.js" defer=""></script><script src="/_next/static/chunks/main-5641a5f61dc27c0f.js" defer=""></script><script src="/_next/static/chunks/pages/_app-a20eeb038bec1046.js" defer=""></script><script src="/_next/static/chunks/106-a71b11894cb18610.js" defer=""></script><script src="/_next/static/chunks/pages/blog/%5Bid%5D-99312d6fcde602f9.js" defer=""></script><script src="/_next/static/20UMOGqztqylNLBnC72Ga/_buildManifest.js" defer=""></script><script src="/_next/static/20UMOGqztqylNLBnC72Ga/_ssgManifest.js" defer=""></script></head><body><div id="__next"><div class="layout"><header class="nav"><div class="nav-container"><a href="/" class="nav-brand">人生何处不青山</a><div class="nav-links"><a href="/" class="nav-link">首页</a><a href="/blog" class="nav-link">文章</a><a href="/categories" class="nav-link">分类</a><a href="/about" class="nav-link">关于我</a></div></div></header><main class="container"><article class="article_container__uEGY_"><header class="article_header__Dfu8i"><h1 class="article_title__Kemkb">Go和json交互简单介绍</h1><div class="article_meta__EQMJH"><span class="article_date__8Zsel">2023-07-31</span><a class="article_category__FEprG" href="/articles?category=GO">GO</a></div><div class="article_tags__SeZQL"><a class="article_tag__xFxqV" href="/articles?tag=GO">#<!-- -->GO</a></div></header><div class="article_content__xXtEi"><h2>json相关常识</h2>
+<p>json支持的类型：</p>
+<p>number</p>
+<p>array</p>
+<p>object</p>
+<p>string</p>
+<p>boolean</p>
+<p>其中object对应go语言的map，array对应slice</p>
+<h2>编码Marshal</h2>
+<pre><code class="language-go">type Movie struct {
+    Title  string
+    Year   int  `json:"released"`
+    Color  bool `json:"color,omitempty"`
+    Actors []string
+}
+
+var movies = []Movie{
+    {Title: "Casablanca", Year: 1942, Color: false,
+        Actors: []string{"Humphrey Bogart", "Ingrid Bergman"}},
+    {Title: "Cool Hand Luke", Year: 1967, Color: true,
+        Actors: []string{"Paul Newman"}},
+    {Title: "Bullitt", Year: 1968, Color: true,
+        Actors: []string{"Steve McQueen", "Jacqueline Bisset"}},
+    // ...
+}
+
+</code></pre>
+<p>使用json.Marshal函数将movies的Movie数组转换成json中的类型</p>
+<pre><code class="language-go">data, err := json.Marshal(movies)
+if err != nil {
+    log.Fatalf("JSON marshaling failed: %s", err)
+}
+fmt.Printf("%s\n", data)
+
+</code></pre>
+<p>输出data的信息，是一个json格式的单行字符串，不便于阅读；使用另一个函数json.MarshalIndent可以得到便于阅读的json格式字符串</p>
+<pre><code class="language-go">data, err := json.MarshalIndent(movies, "", "    ")
+if err != nil {
+    log.Fatalf("JSON marshaling failed: %s", err)
+}
+fmt.Printf("%s\n", data)
+
+</code></pre>
+<p>json.MarshalIndent函数多传入两个参数，第一个参数：每一行输出的前缀字符串；第二个参数：每一个层级的缩进字符串。上述代码将会输出如下字符串</p>
+<pre><code class="language-json">[
+    {
+        "Title": "Casablanca",
+        "released": 1942,
+        "Actors": [
+            "Humphrey Bogart",
+            "Ingrid Bergman"
+        ]
+    },
+    {
+        "Title": "Cool Hand Luke",
+        "released": 1967,
+        "color": true,
+        "Actors": [
+            "Paul Newman"
+        ]
+    },
+    {
+        "Title": "Bullitt",
+        "released": 1968,
+        "color": true,
+        "Actors": [
+            "Steve McQueen",
+            "Jacqueline Bisset"
+        ]
+    }
+]
+
+</code></pre>
+<p>最后一个对象末尾不需要逗号隔开。</p>
+<p>在编码时，默认使用Go语言结构体的成员名字作为JSON的对象（使用了reflect反射技术）。输出的json中，把go语言中定义的结构体属性Year和属性Color变成了released和color。这是因为在结构体定义的时候增加了tag（标签）。</p>
+<pre><code class="language-go">Year  int  `json:"released"`
+Color bool `json:"color,omitempty"`
+
+</code></pre>
+<p>omitempty表示当该属性的值是空值或者零值的时候，编码成json时不生成该json对象；例如movie数组中的Casablanca（Color是false）并没有输出color这个属性</p>
+<h3>标签的定义方式</h3>
+<p>一般是使用key:"value"的形式定义标签，value可以由多个字符串构成，不同的字符串之间使用'，'隔开。因为标签的定义需要使用双引号，所以定义的时候采用原生字符串面值的形式书写（用`包裹起来）。</p>
+<p>（使用goland可以定义完毕结构体之后键入alt+enter进入提示操作，选择add key to tags可以在后面生成一系列的tags模板）</p>
+<h2>解码Unmarshal</h2>
+<p>解码json.Unmarshal可以将json解码成go语言的结构体，第一个参数传入json字符串，第二个参数传入存储解码内容的结构体地址；可以通过给结构体定义部分属性从而只将感兴趣的内容解码</p>
+<pre><code class="language-go">var titles []struct{ Title string }
+if err := json.Unmarshal(data, &#x26;titles); err != nil {
+    log.Fatalf("JSON unmarshaling failed: %s", err)
+}
+fmt.Println(titles) // "[{Casablanca} {Cool Hand Luke} {Bullitt}]"
+
+</code></pre>
+<h2>练习</h2>
+<p>通过web编程获取github issue中的相关内容</p>
+<p>gopl.io/ch4/github/github.go（github上的链接，gopl.io是一个仓库）：</p>
+<pre><code class="language-go">// Copyright © 2016 Alan A. A. Donovan &#x26; Brian W. Kernighan.
+// License: https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+// See page 110.
+//!+
+
+// Package github provides a Go API for the GitHub issue tracker.
+// See https://developer.github.com/v3/search/#search-issues.
+package github
+
+import "time"
+
+const IssuesURL = "https://api.github.com/search/issues"
+
+type IssuesSearchResult struct {
+	TotalCount int `json:"total_count"`
+	Items      []*Issue
+}
+
+type Issue struct {
+	Number    int
+	HTMLURL   string `json:"html_url"`
+	Title     string
+	State     string
+	User      *User
+	CreatedAt time.Time `json:"created_at"`
+	Body      string    // in Markdown format
+}
+
+type User struct {
+	Login   string
+	HTMLURL string `json:"html_url"`
+}
+
+//!-
+
+</code></pre>
+<p>gopl.io/ch4/github/search.go:</p>
+<pre><code class="language-go">// Copyright © 2016 Alan A. A. Donovan &#x26; Brian W. Kernighan.
+// License: https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+//!+
+
+package github
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
+)
+
+// SearchIssues queries the GitHub issue tracker.
+func SearchIssues(terms []string) (*IssuesSearchResult, error) {
+	q := url.QueryEscape(strings.Join(terms, " "))
+	resp, err := http.Get(IssuesURL + "?q=" + q)
+	if err != nil {
+		return nil, err
+	}
+	//!-
+	// For long-term stability, instead of http.Get, use the
+	// variant below which adds an HTTP request header indicating
+	// that only version 3 of the GitHub API is acceptable.
+	//
+	//   req, err := http.NewRequest("GET", IssuesURL+"?q="+q, nil)
+	//   if err != nil {
+	//       return nil, err
+	//   }
+	//   req.Header.Set(
+	//       "Accept", "application/vnd.github.v3.text-match+json")
+	//   resp, err := http.DefaultClient.Do(req)
+	//!+
+
+	// We must close resp.Body on all execution paths.
+	// (Chapter 5 presents 'defer', which makes this simpler.)
+	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
+		return nil, fmt.Errorf("search query failed: %s", resp.Status)
+	}
+
+	var result IssuesSearchResult
+	if err := json.NewDecoder(resp.Body).Decode(&#x26;result); err != nil {
+		resp.Body.Close()
+		return nil, err
+	}
+	resp.Body.Close()
+	return &#x26;result, nil
+}
+
+//!-
+
+</code></pre>
+<p>gopl.io/ch4/issues/main.go:</p>
+<pre><code class="language-go">// Copyright © 2016 Alan A. A. Donovan &#x26; Brian W. Kernighan.
+// License: https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+// See page 112.
+//!+
+
+// Issues prints a table of GitHub issues matching the search terms.
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+
+	"gopl.io/ch4/github"
+)
+
+//!+
+func main() {
+	result, err := github.SearchIssues(os.Args[1:])
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%d issues:\n", result.TotalCount)
+	for _, item := range result.Items {
+		fmt.Printf("#%-5d %9.9s %.55s\n",
+			item.Number, item.User.Login, item.Title)
+	}
+}
+
+//!-
+
+/*
+//!+textoutput
+$ go build gopl.io/ch4/issues
+$ ./issues repo:golang/go is:open json decoder
+13 issues:
+#5680    eaigner encoding/json: set key converter on en/decoder
+#6050  gopherbot encoding/json: provide tokenizer
+#8658  gopherbot encoding/json: use bufio
+#8462  kortschak encoding/json: UnmarshalText confuses json.Unmarshal
+#5901        rsc encoding/json: allow override type marshaling
+#9812  klauspost encoding/json: string tag not symmetric
+#7872  extempora encoding/json: Encoder internally buffers full output
+#9650    cespare encoding/json: Decoding gives errPhase when unmarshalin
+#6716  gopherbot encoding/json: include field name in unmarshal error me
+#6901  lukescott encoding/json, encoding/xml: option to treat unknown fi
+#6384    joeshaw encoding/json: encode precise floating point integers u
+#6647    btracey x/tools/cmd/godoc: display type kind of each named type
+#4237  gjemiller encoding/base64: URLEncoding padding is optional
+//!-textoutput
+*/
+</code></pre>
+<p>代码实现了查找指定github仓库中指定关键词对应的issue的编号，发布者id，问题的描述</p>
+<h3>练习4.10</h3>
+<p>修改issues程序，实现对输出的问题进行分类，分别是不超过一个月、不到一年、超过一年三类issue</p>
+<p>我的思路：获取当前时间信息（使用time.Now)，当前时间减去发布时间（.Sub）获得新的时间（time.Time类型），获取小时数（.Hour）然后比较是否超过了一个月或者一年</p>
+<p>代码：</p>
+<pre><code class="language-go">// Copyright © 2016 Alan A. A. Donovan &#x26; Brian W. Kernighan.
+// License: https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+// See page 112.
+//!+
+
+// Issues prints a table of GitHub issues matching the search terms.
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"time"
+
+	"gopl.io/ch4/github"
+)
+
+// !+
+func main() {
+	result, err := github.SearchIssues(os.Args[1:])
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%d issues:\n", result.TotalCount)
+
+//---------------修改开始的地方-------------------
+	currentTime := time.Now()
+	partItem := make(map[string][]*github.Issue, 3) //三类问题的map 不超过一个月 不超过一年 超过一年
+	partItem["不超过一个月"] = make([]*github.Issue, 0)
+	partItem["不超过一年"] = make([]*github.Issue, 0)
+	partItem["超过一年"] = make([]*github.Issue, 0)
+	monthTime := 30 * 24
+	yearTime := monthTime*12 + 5*24
+	for _, item := range result.Items {
+		switch timeLag := currentTime.Sub(item.CreatedAt); {
+		case timeLag.Hours() &#x3C; float64(monthTime):
+			partItem["不超过一个月"] = append(partItem["不超过一个月"], item)
+		case timeLag.Hours() &#x3C; float64(yearTime):
+			partItem["不超过一年"] = append(partItem["不超过一年"], item)
+		default:
+			partItem["超过一年"] = append(partItem["超过一年"], item)
+		}
+	}
+
+	for index, item := range partItem {
+		fmt.Println(index)
+		for j := 0; j &#x3C; len(item); j++ {
+			innerItem := item[j]
+			fmt.Printf("#%-5d %9.9s %.55s %s\n",
+				innerItem.Number, innerItem.User.Login, innerItem.Title, innerItem.CreatedAt)
+		}
+	}
+//---------------修改结束的地方-------------------
+}
+
+//!-
+
+/*
+//!+textoutput
+$ go build gopl.io/ch4/issues
+$ ./issues repo:golang/go is:open json decoder
+13 issues:
+#5680    eaigner encoding/json: set key converter on en/decoder
+#6050  gopherbot encoding/json: provide tokenizer
+#8658  gopherbot encoding/json: use bufio
+#8462  kortschak encoding/json: UnmarshalText confuses json.Unmarshal
+#5901        rsc encoding/json: allow override type marshaling
+#9812  klauspost encoding/json: string tag not symmetric
+#7872  extempora encoding/json: Encoder internally buffers full output
+#9650    cespare encoding/json: Decoding gives errPhase when unmarshalin
+#6716  gopherbot encoding/json: include field name in unmarshal error me
+#6901  lukescott encoding/json, encoding/xml: option to treat unknown fi
+#6384    joeshaw encoding/json: encode precise floating point integers u
+#6647    btracey x/tools/cmd/godoc: display type kind of each named type
+#4237  gjemiller encoding/base64: URLEncoding padding is optional
+//!-textoutput
+*/
+
+</code></pre>
+<p>可以实现正常的输出。</p>
+<p>遇到的问题：</p>
+<ul>
+<li>
+<p>一开始的思路是创建二维slice，然后不同的行表示不同的类别，同一行的不同列表示同一个类的不同issue；这样做的问题是意义不明确，不如创建一个map，把类别和对应的slice做映射</p>
+</li>
+<li>
+<p>创建每一个类别的slice时使用 <code>make([]github.Issue,0)</code>而不是 <code>make([]*github.Issue,0)</code>导致最后出错，使用复合类型时最好在前面带*号；包括在结构体内使用其他结构体的类型时，样例里给出的也是带*号的</p>
+<pre><code class="language-go">type Issue struct {
+	Number    int
+	HTMLURL   string `json:"html_url"`
+	Title     string
+	State     string
+	User      *User
+	CreatedAt time.Time `json:"created_at"`
+	Body      string    // in Markdown format
+}
+</code></pre>
+</li>
+<li>
+<p>使用hour来判断时间是否过了一个月或者一年误差比较大，可以直接使用月份之差或者年份之差来判断</p>
+<p>别人的程序：</p>
+<pre><code class="language-go">func Process(data *IssuesSearchResult) {
+	// 创建一个hash表
+	hash := make(map[string][]*Issue, 3)
+	hash["不到一月"] = make([]*Issue, 0)
+	hash["不到一年"] = make([]*Issue, 0)
+	hash["超过一年"] = make([]*Issue, 0)
+	// 遍历数据
+	for _, val := range data.Items {
+		// 获取现在的时间
+		now := time.Now()
+		year := now.Year()
+		month := now.Month()
+		// 创建时间
+		create_year := val.CreatedAt.Year()
+		create_month := val.CreatedAt.Month()
+		if year == create_year &#x26;&#x26; month == create_month {
+			hash["不到一月"] = append(hash["不到一月"], val)
+		} else if year == create_year {
+			hash["不到一年"] = append(hash["不到一年"], val)
+		} else {
+			hash["超过一年"] = append(hash["超过一年"], val)
+		}
+	}
+	fmt.Printf("数据总条数，%v\n", data.TotalCount)
+	for key, val := range hash {
+		fmt.Printf("%s:\n", key)
+		for _, v := range val {
+			fmt.Printf("#%-5d %9.9s %.55s %9.9v\n",
+				v.Number, v.User.Login, v.Title, v.CreatedAt)
+		}
+	}
+}
+</code></pre>
+<p>这样判断可以精确一点，不会出现某些时刻判断不准确的情况</p>
+</li>
+<li>
+<p>可以把对数据的操作封装成一个函数，这样main函数体内的代码会更简洁一点；同时可以让用户在不用分类输出的时候可以选择直接输出所有内容</p>
+</li>
+</ul>
+<h3>练习4.12</h3>
+<p>描述：流行的web漫画服务xkcd也提供了JSON接口。例如，一个 https://xkcd.com/571/info.0.json 请求将返回一个很多人喜爱的571编号的详细描述。下载每个链接（只下载一次）然后创建一个离线索引。编写一个xkcd工具，使用这些离线索引，打印和命令行输入的检索词相匹配的漫画的URL。</p>
+<p>解决思路:</p>
+<ul>
+<li>首先查看网站的规律，发现https://xkcd.com/是基本的域名，后面跟上漫画的编号，最后跟上/info.0.json表示查看json信息；所以定义一个baseUrl，然后写一个循环获取所有的json文件，将他们存放到csv文件中</li>
+<li>需要获取到的属性有title，img，link；所以需要定义结构体，里面的成员有title，img，link；并且标签上解释了json编码的名称</li>
+<li>获取用户的关键词可以采用os.Args[1:]，判断是否含有该漫画可以采用模糊搜索，在所有的记录中查询关键词是否被包含在某一条记录中的title里面；如果有则输出该条记录</li>
+<li>读取csv文件的方式可以采用csv.NewReader()创建reader，然后通过循环调用reader的函数Read，直到读取到io.EOF停止读取内容；每读一条内容就匹配一下是否符合关键词，如果符合就输出。</li>
+</ul>
+<p>我的程序：</p>
+<pre><code class="language-go">//test.go
+package test
+
+import (
+	"encoding/csv"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"strings"
+)
+
+const BaseUrl = "https://xkcd.com/"
+const filename = "xkcd.csv"
+
+type DataInfo struct {
+	Title string `json:"title,omitempty"`
+	Img   string `json:"img,omitempty"`
+	Link  string `json:"link,omitempty"`
+}
+
+func Download() {
+	f, err := os.Create(filename)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	//创建writer
+	writer := csv.NewWriter(f)
+	//使用writer向csv写入内容
+	writer.Write([]string{"title", "link", "img"})
+	//循环获取每条数据
+	var dataInfo DataInfo
+	for i := 1; i &#x3C; 10; i++ {
+		//发送http get请求
+		fmt.Println(i)
+		currentUrl := fmt.Sprintf("%s%d", BaseUrl, i)
+		res, err := http.Get(currentUrl + "/info.0.json")
+		if err != nil {
+			panic(err)
+		}
+		// 如果已经到最后一个漫画，页面返回404，返回的状态码不是200
+		if res.StatusCode != http.StatusOK {
+			fmt.Println("没有更多漫画了")
+			break
+		}
+		err = json.NewDecoder(res.Body).Decode(&#x26;dataInfo)
+		if err != nil {
+			panic(err)
+		}
+		// 将内容存储到csv中
+		writer.Write([]string{dataInfo.Title, dataInfo.Link + currentUrl, dataInfo.Img})
+		// 将缓存内容写入csv中
+		writer.Flush()
+	}
+}
+
+func Search(args string) {
+	f, err := os.Open(filename)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	reader := csv.NewReader(f)
+	var hasfind bool
+	for {
+		result, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if strings.Contains(strings.ToLower(result[0]), args) {
+			fmt.Printf("link: %s; img link: %s\n", result[1], result[2])
+			hasfind = true
+		}
+	}
+	if !hasfind {
+		fmt.Println("没有找到此漫画")
+	}
+}
+
+</code></pre>
+<pre><code class="language-go">package main
+
+import (
+	"ex4.12/test"
+	"os"
+	"strings"
+)
+
+func main() {
+	// test.Download()
+	key := os.Args[1:]
+	test.Search(strings.Join(key, " "))
+}
+
+</code></pre>
+<p>第一次执行的时候先运行test.Download()，然后执行test.Search()查找关键词对应的漫画链接</p>
+<h3>练习4.13</h3>
+<p>描述：使用开放电影数据库的JSON服务接口，允许你检索和下载 https://omdbapi.com/ 上电影的名字和对应的海报图像。编写一个poster工具，通过命令行输入的电影名字，下载对应的海报。</p>
+<p>我的思路：</p>
+<ul>
+<li>类似练习4.12，首先定义baseUrl和这个网站的apikey，然后构造发出的请求url，通过http.Get获取返回的json</li>
+<li>定义结构体获取返回的json中我们感兴趣的属性（例如title，poster，imdbID等）</li>
+<li>创建.jpg格式的文件，然后使用jpeg库decode poster url中的数据，存储到image.Image类型的对象中；之后通过encode存储到文件中</li>
+</ul>
+<p>我的程序：</p>
+<pre><code class="language-go">//test.go
+package contact
+
+import (
+	"encoding/json"
+	"fmt"
+	"image"
+	"image/jpeg"
+	"net/http"
+	"os"
+)
+
+const (
+	baseUrl = "https://omdbapi.com/"
+	apiKey  = "bb3ad877"
+)
+
+type movie struct {
+	Title  string `json:"Title,omitempty"`
+	Poster string `json:"Poster,omitempty"`
+	ImdbID string `json:"imdbID"`
+}
+
+func Query(title string) {
+	res, err := http.Get(fmt.Sprintf("%s?apikey=%s&#x26;t=%s", baseUrl, apiKey, title))
+	if err != nil {
+		fmt.Println("请求发送失败")
+		panic(err)
+	}
+	if res.StatusCode != http.StatusOK {
+		fmt.Printf("请求不成功，状态码是%d\n", res.StatusCode)
+		os.Exit(1)
+	}
+	var movies movie
+	err = json.NewDecoder(res.Body).Decode(&#x26;movies)
+	if err != nil {
+		panic(err)
+	}
+	res, err = http.Get(movies.Poster)
+	if err != nil {
+		panic(err)
+	}
+	var img image.Image
+	img, err = jpeg.Decode(res.Body)
+	if err != nil {
+		panic(err)
+	}
+	f, _ := os.OpenFile(fmt.Sprintf("%s.jpg", movies.ImdbID), os.O_RDWR|os.O_CREATE, 0666)
+	defer f.Close()
+	jpeg.Encode(f, img, nil)
+}
+
+</code></pre>
+<pre><code class="language-go">//main.go
+package main
+
+import (
+	"Ex4.13/contact"
+	"os"
+	"strings"
+)
+
+func main() {
+	title := os.Args[1:]
+	contact.Query(strings.Join(title, " "))
+}
+
+</code></pre>
+<h4>附：go语言处理图片</h4>
+<h5>base64 转 file</h5>
+<pre><code class="language-go">ddd, _ := base64.StdEncoding.DecodeString(datasource) //成图片文件并把文件写入到buffer
+err2 := ioutil.WriteFile("./output.jpg", ddd, 0666)   //buffer输出到jpg文件中（不做处理，直接写到文件）
+
+</code></pre>
+<h5>base64 转 buffer</h5>
+<pre><code class="language-go">ddd, _ := base64.StdEncoding.DecodeString(datasource) //成图片文件并把文件写入到buffer
+bbb := bytes.NewBuffer(ddd)                           // 必须加一个buffer 不然没有read方法就会报错
+
+</code></pre>
+<h5>buffer 转 ImageBuff(代码接上面的代码)</h5>
+<pre><code class="language-go">m, _, _ := image.Decode(bbb)                                       // 图片文件解码
+rgbImg := m.(*image.YCbCr)
+subImg := rgbImg.SubImage(image.Rect(0, 0, 200, 200)).(*image.YCbCr) //图片裁剪x0 y0 x1 y1
+
+</code></pre>
+<h5>img 转 file（代码接上面的代码）</h5>
+<pre><code class="language-go">f, _ := os.Create("test.jpg")     //创建文件
+defer f.Close()                   //关闭文件
+jpeg.Encode(f, subImg, nil)       //写入文件
+
+</code></pre>
+<h5>img 转 base64（代码接上面的代码）</h5>
+<pre><code class="language-go">emptyBuff := bytes.NewBuffer(nil)                  //开辟一个新的空buff
+jpeg.Encode(emptyBuff, subImg, nil)                //img写入到buff
+dist := make([]byte, 50000)                        //开辟存储空间
+base64.StdEncoding.Encode(dist, emptyBuff.Bytes()) //buff转成base64
+fmt.Println(string(dist))                          //输出图片base64(type = []byte)
+_ = ioutil.WriteFile("./base64pic.txt", dist, 0666) //buffer输出到jpg文件中（不做处理，直接写到文件）
+
+</code></pre>
+<h5>imgFile 转 base64</h5>
+<pre><code class="language-go">ff, _ := ioutil.ReadFile("output2.jpg")               //我还是喜欢用这个快速读文件
+bufstore := make([]byte, 5000000)                     //数据缓存
+base64.StdEncoding.Encode(bufstore, ff)               // 文件转base64
+_ = ioutil.WriteFile("./output2.jpg.txt", dist, 0666) //直接写入到文件就ok完活了。
+
+</code></pre>
+</div><footer class="article_footer__5JN_G"><div class="article_navigation__fJhBJ"><a class="article_backButton__FZQSF" href="/blog">返回文章列表</a></div></footer></article></main><footer class="footer"><p>© 2024 个人博客. All rights reserved.</p></footer></div></div><script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"article":{"id":"go json","contentHtml":"\u003ch2\u003ejson相关常识\u003c/h2\u003e\n\u003cp\u003ejson支持的类型：\u003c/p\u003e\n\u003cp\u003enumber\u003c/p\u003e\n\u003cp\u003earray\u003c/p\u003e\n\u003cp\u003eobject\u003c/p\u003e\n\u003cp\u003estring\u003c/p\u003e\n\u003cp\u003eboolean\u003c/p\u003e\n\u003cp\u003e其中object对应go语言的map，array对应slice\u003c/p\u003e\n\u003ch2\u003e编码Marshal\u003c/h2\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003etype Movie struct {\n    Title  string\n    Year   int  `json:\"released\"`\n    Color  bool `json:\"color,omitempty\"`\n    Actors []string\n}\n\nvar movies = []Movie{\n    {Title: \"Casablanca\", Year: 1942, Color: false,\n        Actors: []string{\"Humphrey Bogart\", \"Ingrid Bergman\"}},\n    {Title: \"Cool Hand Luke\", Year: 1967, Color: true,\n        Actors: []string{\"Paul Newman\"}},\n    {Title: \"Bullitt\", Year: 1968, Color: true,\n        Actors: []string{\"Steve McQueen\", \"Jacqueline Bisset\"}},\n    // ...\n}\n\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e使用json.Marshal函数将movies的Movie数组转换成json中的类型\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003edata, err := json.Marshal(movies)\nif err != nil {\n    log.Fatalf(\"JSON marshaling failed: %s\", err)\n}\nfmt.Printf(\"%s\\n\", data)\n\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e输出data的信息，是一个json格式的单行字符串，不便于阅读；使用另一个函数json.MarshalIndent可以得到便于阅读的json格式字符串\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003edata, err := json.MarshalIndent(movies, \"\", \"    \")\nif err != nil {\n    log.Fatalf(\"JSON marshaling failed: %s\", err)\n}\nfmt.Printf(\"%s\\n\", data)\n\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003ejson.MarshalIndent函数多传入两个参数，第一个参数：每一行输出的前缀字符串；第二个参数：每一个层级的缩进字符串。上述代码将会输出如下字符串\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e[\n    {\n        \"Title\": \"Casablanca\",\n        \"released\": 1942,\n        \"Actors\": [\n            \"Humphrey Bogart\",\n            \"Ingrid Bergman\"\n        ]\n    },\n    {\n        \"Title\": \"Cool Hand Luke\",\n        \"released\": 1967,\n        \"color\": true,\n        \"Actors\": [\n            \"Paul Newman\"\n        ]\n    },\n    {\n        \"Title\": \"Bullitt\",\n        \"released\": 1968,\n        \"color\": true,\n        \"Actors\": [\n            \"Steve McQueen\",\n            \"Jacqueline Bisset\"\n        ]\n    }\n]\n\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e最后一个对象末尾不需要逗号隔开。\u003c/p\u003e\n\u003cp\u003e在编码时，默认使用Go语言结构体的成员名字作为JSON的对象（使用了reflect反射技术）。输出的json中，把go语言中定义的结构体属性Year和属性Color变成了released和color。这是因为在结构体定义的时候增加了tag（标签）。\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003eYear  int  `json:\"released\"`\nColor bool `json:\"color,omitempty\"`\n\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eomitempty表示当该属性的值是空值或者零值的时候，编码成json时不生成该json对象；例如movie数组中的Casablanca（Color是false）并没有输出color这个属性\u003c/p\u003e\n\u003ch3\u003e标签的定义方式\u003c/h3\u003e\n\u003cp\u003e一般是使用key:\"value\"的形式定义标签，value可以由多个字符串构成，不同的字符串之间使用'，'隔开。因为标签的定义需要使用双引号，所以定义的时候采用原生字符串面值的形式书写（用`包裹起来）。\u003c/p\u003e\n\u003cp\u003e（使用goland可以定义完毕结构体之后键入alt+enter进入提示操作，选择add key to tags可以在后面生成一系列的tags模板）\u003c/p\u003e\n\u003ch2\u003e解码Unmarshal\u003c/h2\u003e\n\u003cp\u003e解码json.Unmarshal可以将json解码成go语言的结构体，第一个参数传入json字符串，第二个参数传入存储解码内容的结构体地址；可以通过给结构体定义部分属性从而只将感兴趣的内容解码\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003evar titles []struct{ Title string }\nif err := json.Unmarshal(data, \u0026#x26;titles); err != nil {\n    log.Fatalf(\"JSON unmarshaling failed: %s\", err)\n}\nfmt.Println(titles) // \"[{Casablanca} {Cool Hand Luke} {Bullitt}]\"\n\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch2\u003e练习\u003c/h2\u003e\n\u003cp\u003e通过web编程获取github issue中的相关内容\u003c/p\u003e\n\u003cp\u003egopl.io/ch4/github/github.go（github上的链接，gopl.io是一个仓库）：\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003e// Copyright © 2016 Alan A. A. Donovan \u0026#x26; Brian W. Kernighan.\n// License: https://creativecommons.org/licenses/by-nc-sa/4.0/\n\n// See page 110.\n//!+\n\n// Package github provides a Go API for the GitHub issue tracker.\n// See https://developer.github.com/v3/search/#search-issues.\npackage github\n\nimport \"time\"\n\nconst IssuesURL = \"https://api.github.com/search/issues\"\n\ntype IssuesSearchResult struct {\n\tTotalCount int `json:\"total_count\"`\n\tItems      []*Issue\n}\n\ntype Issue struct {\n\tNumber    int\n\tHTMLURL   string `json:\"html_url\"`\n\tTitle     string\n\tState     string\n\tUser      *User\n\tCreatedAt time.Time `json:\"created_at\"`\n\tBody      string    // in Markdown format\n}\n\ntype User struct {\n\tLogin   string\n\tHTMLURL string `json:\"html_url\"`\n}\n\n//!-\n\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003egopl.io/ch4/github/search.go:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003e// Copyright © 2016 Alan A. A. Donovan \u0026#x26; Brian W. Kernighan.\n// License: https://creativecommons.org/licenses/by-nc-sa/4.0/\n\n//!+\n\npackage github\n\nimport (\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"net/http\"\n\t\"net/url\"\n\t\"strings\"\n)\n\n// SearchIssues queries the GitHub issue tracker.\nfunc SearchIssues(terms []string) (*IssuesSearchResult, error) {\n\tq := url.QueryEscape(strings.Join(terms, \" \"))\n\tresp, err := http.Get(IssuesURL + \"?q=\" + q)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\t//!-\n\t// For long-term stability, instead of http.Get, use the\n\t// variant below which adds an HTTP request header indicating\n\t// that only version 3 of the GitHub API is acceptable.\n\t//\n\t//   req, err := http.NewRequest(\"GET\", IssuesURL+\"?q=\"+q, nil)\n\t//   if err != nil {\n\t//       return nil, err\n\t//   }\n\t//   req.Header.Set(\n\t//       \"Accept\", \"application/vnd.github.v3.text-match+json\")\n\t//   resp, err := http.DefaultClient.Do(req)\n\t//!+\n\n\t// We must close resp.Body on all execution paths.\n\t// (Chapter 5 presents 'defer', which makes this simpler.)\n\tif resp.StatusCode != http.StatusOK {\n\t\tresp.Body.Close()\n\t\treturn nil, fmt.Errorf(\"search query failed: %s\", resp.Status)\n\t}\n\n\tvar result IssuesSearchResult\n\tif err := json.NewDecoder(resp.Body).Decode(\u0026#x26;result); err != nil {\n\t\tresp.Body.Close()\n\t\treturn nil, err\n\t}\n\tresp.Body.Close()\n\treturn \u0026#x26;result, nil\n}\n\n//!-\n\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003egopl.io/ch4/issues/main.go:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003e// Copyright © 2016 Alan A. A. Donovan \u0026#x26; Brian W. Kernighan.\n// License: https://creativecommons.org/licenses/by-nc-sa/4.0/\n\n// See page 112.\n//!+\n\n// Issues prints a table of GitHub issues matching the search terms.\npackage main\n\nimport (\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"gopl.io/ch4/github\"\n)\n\n//!+\nfunc main() {\n\tresult, err := github.SearchIssues(os.Args[1:])\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%d issues:\\n\", result.TotalCount)\n\tfor _, item := range result.Items {\n\t\tfmt.Printf(\"#%-5d %9.9s %.55s\\n\",\n\t\t\titem.Number, item.User.Login, item.Title)\n\t}\n}\n\n//!-\n\n/*\n//!+textoutput\n$ go build gopl.io/ch4/issues\n$ ./issues repo:golang/go is:open json decoder\n13 issues:\n#5680    eaigner encoding/json: set key converter on en/decoder\n#6050  gopherbot encoding/json: provide tokenizer\n#8658  gopherbot encoding/json: use bufio\n#8462  kortschak encoding/json: UnmarshalText confuses json.Unmarshal\n#5901        rsc encoding/json: allow override type marshaling\n#9812  klauspost encoding/json: string tag not symmetric\n#7872  extempora encoding/json: Encoder internally buffers full output\n#9650    cespare encoding/json: Decoding gives errPhase when unmarshalin\n#6716  gopherbot encoding/json: include field name in unmarshal error me\n#6901  lukescott encoding/json, encoding/xml: option to treat unknown fi\n#6384    joeshaw encoding/json: encode precise floating point integers u\n#6647    btracey x/tools/cmd/godoc: display type kind of each named type\n#4237  gjemiller encoding/base64: URLEncoding padding is optional\n//!-textoutput\n*/\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e代码实现了查找指定github仓库中指定关键词对应的issue的编号，发布者id，问题的描述\u003c/p\u003e\n\u003ch3\u003e练习4.10\u003c/h3\u003e\n\u003cp\u003e修改issues程序，实现对输出的问题进行分类，分别是不超过一个月、不到一年、超过一年三类issue\u003c/p\u003e\n\u003cp\u003e我的思路：获取当前时间信息（使用time.Now)，当前时间减去发布时间（.Sub）获得新的时间（time.Time类型），获取小时数（.Hour）然后比较是否超过了一个月或者一年\u003c/p\u003e\n\u003cp\u003e代码：\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003e// Copyright © 2016 Alan A. A. Donovan \u0026#x26; Brian W. Kernighan.\n// License: https://creativecommons.org/licenses/by-nc-sa/4.0/\n\n// See page 112.\n//!+\n\n// Issues prints a table of GitHub issues matching the search terms.\npackage main\n\nimport (\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\t\"time\"\n\n\t\"gopl.io/ch4/github\"\n)\n\n// !+\nfunc main() {\n\tresult, err := github.SearchIssues(os.Args[1:])\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%d issues:\\n\", result.TotalCount)\n\n//---------------修改开始的地方-------------------\n\tcurrentTime := time.Now()\n\tpartItem := make(map[string][]*github.Issue, 3) //三类问题的map 不超过一个月 不超过一年 超过一年\n\tpartItem[\"不超过一个月\"] = make([]*github.Issue, 0)\n\tpartItem[\"不超过一年\"] = make([]*github.Issue, 0)\n\tpartItem[\"超过一年\"] = make([]*github.Issue, 0)\n\tmonthTime := 30 * 24\n\tyearTime := monthTime*12 + 5*24\n\tfor _, item := range result.Items {\n\t\tswitch timeLag := currentTime.Sub(item.CreatedAt); {\n\t\tcase timeLag.Hours() \u0026#x3C; float64(monthTime):\n\t\t\tpartItem[\"不超过一个月\"] = append(partItem[\"不超过一个月\"], item)\n\t\tcase timeLag.Hours() \u0026#x3C; float64(yearTime):\n\t\t\tpartItem[\"不超过一年\"] = append(partItem[\"不超过一年\"], item)\n\t\tdefault:\n\t\t\tpartItem[\"超过一年\"] = append(partItem[\"超过一年\"], item)\n\t\t}\n\t}\n\n\tfor index, item := range partItem {\n\t\tfmt.Println(index)\n\t\tfor j := 0; j \u0026#x3C; len(item); j++ {\n\t\t\tinnerItem := item[j]\n\t\t\tfmt.Printf(\"#%-5d %9.9s %.55s %s\\n\",\n\t\t\t\tinnerItem.Number, innerItem.User.Login, innerItem.Title, innerItem.CreatedAt)\n\t\t}\n\t}\n//---------------修改结束的地方-------------------\n}\n\n//!-\n\n/*\n//!+textoutput\n$ go build gopl.io/ch4/issues\n$ ./issues repo:golang/go is:open json decoder\n13 issues:\n#5680    eaigner encoding/json: set key converter on en/decoder\n#6050  gopherbot encoding/json: provide tokenizer\n#8658  gopherbot encoding/json: use bufio\n#8462  kortschak encoding/json: UnmarshalText confuses json.Unmarshal\n#5901        rsc encoding/json: allow override type marshaling\n#9812  klauspost encoding/json: string tag not symmetric\n#7872  extempora encoding/json: Encoder internally buffers full output\n#9650    cespare encoding/json: Decoding gives errPhase when unmarshalin\n#6716  gopherbot encoding/json: include field name in unmarshal error me\n#6901  lukescott encoding/json, encoding/xml: option to treat unknown fi\n#6384    joeshaw encoding/json: encode precise floating point integers u\n#6647    btracey x/tools/cmd/godoc: display type kind of each named type\n#4237  gjemiller encoding/base64: URLEncoding padding is optional\n//!-textoutput\n*/\n\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e可以实现正常的输出。\u003c/p\u003e\n\u003cp\u003e遇到的问题：\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e\n\u003cp\u003e一开始的思路是创建二维slice，然后不同的行表示不同的类别，同一行的不同列表示同一个类的不同issue；这样做的问题是意义不明确，不如创建一个map，把类别和对应的slice做映射\u003c/p\u003e\n\u003c/li\u003e\n\u003cli\u003e\n\u003cp\u003e创建每一个类别的slice时使用 \u003ccode\u003emake([]github.Issue,0)\u003c/code\u003e而不是 \u003ccode\u003emake([]*github.Issue,0)\u003c/code\u003e导致最后出错，使用复合类型时最好在前面带*号；包括在结构体内使用其他结构体的类型时，样例里给出的也是带*号的\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003etype Issue struct {\n\tNumber    int\n\tHTMLURL   string `json:\"html_url\"`\n\tTitle     string\n\tState     string\n\tUser      *User\n\tCreatedAt time.Time `json:\"created_at\"`\n\tBody      string    // in Markdown format\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003c/li\u003e\n\u003cli\u003e\n\u003cp\u003e使用hour来判断时间是否过了一个月或者一年误差比较大，可以直接使用月份之差或者年份之差来判断\u003c/p\u003e\n\u003cp\u003e别人的程序：\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003efunc Process(data *IssuesSearchResult) {\n\t// 创建一个hash表\n\thash := make(map[string][]*Issue, 3)\n\thash[\"不到一月\"] = make([]*Issue, 0)\n\thash[\"不到一年\"] = make([]*Issue, 0)\n\thash[\"超过一年\"] = make([]*Issue, 0)\n\t// 遍历数据\n\tfor _, val := range data.Items {\n\t\t// 获取现在的时间\n\t\tnow := time.Now()\n\t\tyear := now.Year()\n\t\tmonth := now.Month()\n\t\t// 创建时间\n\t\tcreate_year := val.CreatedAt.Year()\n\t\tcreate_month := val.CreatedAt.Month()\n\t\tif year == create_year \u0026#x26;\u0026#x26; month == create_month {\n\t\t\thash[\"不到一月\"] = append(hash[\"不到一月\"], val)\n\t\t} else if year == create_year {\n\t\t\thash[\"不到一年\"] = append(hash[\"不到一年\"], val)\n\t\t} else {\n\t\t\thash[\"超过一年\"] = append(hash[\"超过一年\"], val)\n\t\t}\n\t}\n\tfmt.Printf(\"数据总条数，%v\\n\", data.TotalCount)\n\tfor key, val := range hash {\n\t\tfmt.Printf(\"%s:\\n\", key)\n\t\tfor _, v := range val {\n\t\t\tfmt.Printf(\"#%-5d %9.9s %.55s %9.9v\\n\",\n\t\t\t\tv.Number, v.User.Login, v.Title, v.CreatedAt)\n\t\t}\n\t}\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e这样判断可以精确一点，不会出现某些时刻判断不准确的情况\u003c/p\u003e\n\u003c/li\u003e\n\u003cli\u003e\n\u003cp\u003e可以把对数据的操作封装成一个函数，这样main函数体内的代码会更简洁一点；同时可以让用户在不用分类输出的时候可以选择直接输出所有内容\u003c/p\u003e\n\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3\u003e练习4.12\u003c/h3\u003e\n\u003cp\u003e描述：流行的web漫画服务xkcd也提供了JSON接口。例如，一个 https://xkcd.com/571/info.0.json 请求将返回一个很多人喜爱的571编号的详细描述。下载每个链接（只下载一次）然后创建一个离线索引。编写一个xkcd工具，使用这些离线索引，打印和命令行输入的检索词相匹配的漫画的URL。\u003c/p\u003e\n\u003cp\u003e解决思路:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e首先查看网站的规律，发现https://xkcd.com/是基本的域名，后面跟上漫画的编号，最后跟上/info.0.json表示查看json信息；所以定义一个baseUrl，然后写一个循环获取所有的json文件，将他们存放到csv文件中\u003c/li\u003e\n\u003cli\u003e需要获取到的属性有title，img，link；所以需要定义结构体，里面的成员有title，img，link；并且标签上解释了json编码的名称\u003c/li\u003e\n\u003cli\u003e获取用户的关键词可以采用os.Args[1:]，判断是否含有该漫画可以采用模糊搜索，在所有的记录中查询关键词是否被包含在某一条记录中的title里面；如果有则输出该条记录\u003c/li\u003e\n\u003cli\u003e读取csv文件的方式可以采用csv.NewReader()创建reader，然后通过循环调用reader的函数Read，直到读取到io.EOF停止读取内容；每读一条内容就匹配一下是否符合关键词，如果符合就输出。\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e我的程序：\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003e//test.go\npackage test\n\nimport (\n\t\"encoding/csv\"\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"io\"\n\t\"net/http\"\n\t\"os\"\n\t\"strings\"\n)\n\nconst BaseUrl = \"https://xkcd.com/\"\nconst filename = \"xkcd.csv\"\n\ntype DataInfo struct {\n\tTitle string `json:\"title,omitempty\"`\n\tImg   string `json:\"img,omitempty\"`\n\tLink  string `json:\"link,omitempty\"`\n}\n\nfunc Download() {\n\tf, err := os.Create(filename)\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tdefer f.Close()\n\t//创建writer\n\twriter := csv.NewWriter(f)\n\t//使用writer向csv写入内容\n\twriter.Write([]string{\"title\", \"link\", \"img\"})\n\t//循环获取每条数据\n\tvar dataInfo DataInfo\n\tfor i := 1; i \u0026#x3C; 10; i++ {\n\t\t//发送http get请求\n\t\tfmt.Println(i)\n\t\tcurrentUrl := fmt.Sprintf(\"%s%d\", BaseUrl, i)\n\t\tres, err := http.Get(currentUrl + \"/info.0.json\")\n\t\tif err != nil {\n\t\t\tpanic(err)\n\t\t}\n\t\t// 如果已经到最后一个漫画，页面返回404，返回的状态码不是200\n\t\tif res.StatusCode != http.StatusOK {\n\t\t\tfmt.Println(\"没有更多漫画了\")\n\t\t\tbreak\n\t\t}\n\t\terr = json.NewDecoder(res.Body).Decode(\u0026#x26;dataInfo)\n\t\tif err != nil {\n\t\t\tpanic(err)\n\t\t}\n\t\t// 将内容存储到csv中\n\t\twriter.Write([]string{dataInfo.Title, dataInfo.Link + currentUrl, dataInfo.Img})\n\t\t// 将缓存内容写入csv中\n\t\twriter.Flush()\n\t}\n}\n\nfunc Search(args string) {\n\tf, err := os.Open(filename)\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tdefer f.Close()\n\treader := csv.NewReader(f)\n\tvar hasfind bool\n\tfor {\n\t\tresult, err := reader.Read()\n\t\tif err == io.EOF {\n\t\t\tbreak\n\t\t}\n\t\tif strings.Contains(strings.ToLower(result[0]), args) {\n\t\t\tfmt.Printf(\"link: %s; img link: %s\\n\", result[1], result[2])\n\t\t\thasfind = true\n\t\t}\n\t}\n\tif !hasfind {\n\t\tfmt.Println(\"没有找到此漫画\")\n\t}\n}\n\n\u003c/code\u003e\u003c/pre\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003epackage main\n\nimport (\n\t\"ex4.12/test\"\n\t\"os\"\n\t\"strings\"\n)\n\nfunc main() {\n\t// test.Download()\n\tkey := os.Args[1:]\n\ttest.Search(strings.Join(key, \" \"))\n}\n\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e第一次执行的时候先运行test.Download()，然后执行test.Search()查找关键词对应的漫画链接\u003c/p\u003e\n\u003ch3\u003e练习4.13\u003c/h3\u003e\n\u003cp\u003e描述：使用开放电影数据库的JSON服务接口，允许你检索和下载 https://omdbapi.com/ 上电影的名字和对应的海报图像。编写一个poster工具，通过命令行输入的电影名字，下载对应的海报。\u003c/p\u003e\n\u003cp\u003e我的思路：\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e类似练习4.12，首先定义baseUrl和这个网站的apikey，然后构造发出的请求url，通过http.Get获取返回的json\u003c/li\u003e\n\u003cli\u003e定义结构体获取返回的json中我们感兴趣的属性（例如title，poster，imdbID等）\u003c/li\u003e\n\u003cli\u003e创建.jpg格式的文件，然后使用jpeg库decode poster url中的数据，存储到image.Image类型的对象中；之后通过encode存储到文件中\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e我的程序：\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003e//test.go\npackage contact\n\nimport (\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"image\"\n\t\"image/jpeg\"\n\t\"net/http\"\n\t\"os\"\n)\n\nconst (\n\tbaseUrl = \"https://omdbapi.com/\"\n\tapiKey  = \"bb3ad877\"\n)\n\ntype movie struct {\n\tTitle  string `json:\"Title,omitempty\"`\n\tPoster string `json:\"Poster,omitempty\"`\n\tImdbID string `json:\"imdbID\"`\n}\n\nfunc Query(title string) {\n\tres, err := http.Get(fmt.Sprintf(\"%s?apikey=%s\u0026#x26;t=%s\", baseUrl, apiKey, title))\n\tif err != nil {\n\t\tfmt.Println(\"请求发送失败\")\n\t\tpanic(err)\n\t}\n\tif res.StatusCode != http.StatusOK {\n\t\tfmt.Printf(\"请求不成功，状态码是%d\\n\", res.StatusCode)\n\t\tos.Exit(1)\n\t}\n\tvar movies movie\n\terr = json.NewDecoder(res.Body).Decode(\u0026#x26;movies)\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tres, err = http.Get(movies.Poster)\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tvar img image.Image\n\timg, err = jpeg.Decode(res.Body)\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tf, _ := os.OpenFile(fmt.Sprintf(\"%s.jpg\", movies.ImdbID), os.O_RDWR|os.O_CREATE, 0666)\n\tdefer f.Close()\n\tjpeg.Encode(f, img, nil)\n}\n\n\u003c/code\u003e\u003c/pre\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003e//main.go\npackage main\n\nimport (\n\t\"Ex4.13/contact\"\n\t\"os\"\n\t\"strings\"\n)\n\nfunc main() {\n\ttitle := os.Args[1:]\n\tcontact.Query(strings.Join(title, \" \"))\n}\n\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch4\u003e附：go语言处理图片\u003c/h4\u003e\n\u003ch5\u003ebase64 转 file\u003c/h5\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003eddd, _ := base64.StdEncoding.DecodeString(datasource) //成图片文件并把文件写入到buffer\nerr2 := ioutil.WriteFile(\"./output.jpg\", ddd, 0666)   //buffer输出到jpg文件中（不做处理，直接写到文件）\n\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch5\u003ebase64 转 buffer\u003c/h5\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003eddd, _ := base64.StdEncoding.DecodeString(datasource) //成图片文件并把文件写入到buffer\nbbb := bytes.NewBuffer(ddd)                           // 必须加一个buffer 不然没有read方法就会报错\n\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch5\u003ebuffer 转 ImageBuff(代码接上面的代码)\u003c/h5\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003em, _, _ := image.Decode(bbb)                                       // 图片文件解码\nrgbImg := m.(*image.YCbCr)\nsubImg := rgbImg.SubImage(image.Rect(0, 0, 200, 200)).(*image.YCbCr) //图片裁剪x0 y0 x1 y1\n\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch5\u003eimg 转 file（代码接上面的代码）\u003c/h5\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003ef, _ := os.Create(\"test.jpg\")     //创建文件\ndefer f.Close()                   //关闭文件\njpeg.Encode(f, subImg, nil)       //写入文件\n\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch5\u003eimg 转 base64（代码接上面的代码）\u003c/h5\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003eemptyBuff := bytes.NewBuffer(nil)                  //开辟一个新的空buff\njpeg.Encode(emptyBuff, subImg, nil)                //img写入到buff\ndist := make([]byte, 50000)                        //开辟存储空间\nbase64.StdEncoding.Encode(dist, emptyBuff.Bytes()) //buff转成base64\nfmt.Println(string(dist))                          //输出图片base64(type = []byte)\n_ = ioutil.WriteFile(\"./base64pic.txt\", dist, 0666) //buffer输出到jpg文件中（不做处理，直接写到文件）\n\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch5\u003eimgFile 转 base64\u003c/h5\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003eff, _ := ioutil.ReadFile(\"output2.jpg\")               //我还是喜欢用这个快速读文件\nbufstore := make([]byte, 5000000)                     //数据缓存\nbase64.StdEncoding.Encode(bufstore, ff)               // 文件转base64\n_ = ioutil.WriteFile(\"./output2.jpg.txt\", dist, 0666) //直接写入到文件就ok完活了。\n\n\u003c/code\u003e\u003c/pre\u003e\n","title":"Go和json交互简单介绍","date":"2023-07-31","category":"GO","tags":["GO"],"summary":"介绍Go语言和JSON交互的简单操作","views":0}},"__N_SSG":true},"page":"/blog/[id]","query":{"id":"go json"},"buildId":"20UMOGqztqylNLBnC72Ga","isFallback":false,"gsp":true,"scriptLoader":[]}</script></body></html>

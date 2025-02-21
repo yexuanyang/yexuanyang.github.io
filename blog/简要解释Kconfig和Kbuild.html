@@ -1,0 +1,111 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charSet="utf-8" data-next-head=""/><meta name="viewport" content="width=device-width, initial-scale=1" data-next-head=""/><meta charSet="utf-8"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/><link rel="preload" href="/_next/static/css/71c3005585daf34a.css" as="style"/><link rel="stylesheet" href="/_next/static/css/71c3005585daf34a.css" data-n-g=""/><link rel="preload" href="/_next/static/css/d30dc8bfc45a058b.css" as="style"/><link rel="stylesheet" href="/_next/static/css/d30dc8bfc45a058b.css" data-n-p=""/><noscript data-n-css=""></noscript><script defer="" nomodule="" src="/_next/static/chunks/polyfills-42372ed130431b0a.js"></script><script src="/_next/static/chunks/webpack-8cac0b4b405cede1.js" defer=""></script><script src="/_next/static/chunks/framework-b96261d959dd50e7.js" defer=""></script><script src="/_next/static/chunks/main-5641a5f61dc27c0f.js" defer=""></script><script src="/_next/static/chunks/pages/_app-a20eeb038bec1046.js" defer=""></script><script src="/_next/static/chunks/106-a71b11894cb18610.js" defer=""></script><script src="/_next/static/chunks/pages/blog/%5Bid%5D-99312d6fcde602f9.js" defer=""></script><script src="/_next/static/20UMOGqztqylNLBnC72Ga/_buildManifest.js" defer=""></script><script src="/_next/static/20UMOGqztqylNLBnC72Ga/_ssgManifest.js" defer=""></script></head><body><div id="__next"><div class="layout"><header class="nav"><div class="nav-container"><a href="/" class="nav-brand">人生何处不青山</a><div class="nav-links"><a href="/" class="nav-link">首页</a><a href="/blog" class="nav-link">文章</a><a href="/categories" class="nav-link">分类</a><a href="/about" class="nav-link">关于我</a></div></div></header><main class="container"><article class="article_container__uEGY_"><header class="article_header__Dfu8i"><h1 class="article_title__Kemkb">Kconfig/KBuild in Linux​  </h1><div class="article_meta__EQMJH"><span class="article_date__8Zsel">2024-5-12</span><a class="article_category__FEprG" href="/articles?category=Linux">Linux</a></div><div class="article_tags__SeZQL"><a class="article_tag__xFxqV" href="/articles?tag=Linux">#<!-- -->Linux</a><a class="article_tag__xFxqV" href="/articles?tag=Kconfig">#<!-- -->Kconfig</a><a class="article_tag__xFxqV" href="/articles?tag=KBuild">#<!-- -->KBuild</a></div></header><div class="article_content__xXtEi"><h2>问题</h2>
+<ol>
+<li>Kconfig/KBuild是什么</li>
+<li>Kconfig/KBuild在Linux中是怎么使用的</li>
+<li>Linux在执行编译涉及到了大致哪些操作</li>
+<li>Linux如何做增量编译的？它是如何知道哪些文件需要重新编译</li>
+<li>编译完毕产生的vmlinux和bzImage的区别</li>
+</ol>
+<h3>Kconfig/Kbuild是什么; 在Linux中怎么使用的; Kbuild执行时做了哪些递归编译</h3>
+<p>Kconfig是用来批量管理config的工具，本质上Kconfig只是一种语言。在Linux中执行 make help 可以查看到有关设置的各种含义，其中config相关的含义在 Configuration targets: 下面。其中用的最多的是menuconfig，以菜单的形式编辑和查看config。</p>
+<p>Kbuild在Linux编译时生成modules.order, modules.builtin, modules.builtin.modinfo这些文件。使用Kbuild构建可以设置很多环境变量[1]。</p>
+<p>Kbuild用来触发递归的make操作，Kbuild用来管理大型的项目很合适。Kbuild可以将构建分到各个组件中。</p>
+<p>Kbuild系统中的Makefile包含下面几个部分：</p>
+<ol>
+<li>Makefile： 顶层的Makefile</li>
+<li>.config：编译设置</li>
+<li>arch/$(ARCH)/Makefile：不同架构的Makefile，供给顶层使用</li>
+<li>scripts/Makefile.*: 描述了所有Kbuild makefiles的基本的编译规则<br>
+在顶层Makefile里面会定义需要link到vmlinux的一些需要构建的对象</li>
+</ol>
+<pre><code class="language-Makefile">core-y := init/ usr/  
+drivers-y : $=$ drivers/ sound/  
+drivers-\$(CONFIG_SAMPLES) $+=$ samples/  
+drivers-\$(CONFIG_NET) $+=$ net/  
+drivers-y $+=$ virt/  
+libs-y : $=$ lib/  
+</code></pre>
+<h4>然后在编译vmlinux的时候将编译的目标设置传递给Kbuild</h4>
+<pre><code class="language-Makefile">ifeq (\$(KBUILD_EXTMOD),)   
+core-y $+=$ kernel/ certs/ mm/ fs/ ipc/ security/ crypto/ block/   
+  
+ifdef CONFIG_RUST   
+core-y $+=$ rust/   
+endif   
+  
+vmlinux-dirs : $=\$5$ (patsubst %/,%,\$(filter %/, \   
+\$(core-y) \$(core-m) \$(drivers-y) \$(drivers-m) \   
+\$(libs-y) \$(libs-m)))
+</code></pre>
+<p>能看到在某些config开启的情况下之前定义的变量会修改。在Makefile中大概定义了名字类似KBUILD_VMLINUX_*的一些变量，这些变量在编译Linux的时候会决定Kbuild遍历哪些文件以构建vmlinux。下面附带一张18年博客对vmlinux构建的步骤的大致划分[2]。需要注意的是图中的一些变量在最新的Linux里已经不存在了，例如KBUILD_VMLINUX_INIT。这个图只能作为一个简化助于理解编译的过程</p>
+<p>.config并不是最终kernel build时采用的设置，syncconfig会对.config做处理生成一系列的.conf文件，生成的文件分成三大类：</p>
+<ol>
+<li>
+<p>include/config/auto.conf &#x26; include/config/tristate.conf这两个文件用于make进程处理一些设置</p>
+</li>
+<li>
+<p>include/generated/autoconf.h这个文件用于在C文件中使用设置文件里面全是对设置的#define</p>
+</li>
+<li>
+<p>include/config/*.h：这些都是空的头文件，又来给Kbuild对文件进行追踪判断是否需要重新编译注意：这些文件似乎在新版本Linux中并不是以.h结尾</p>
+</li>
+</ol>
+<h2>Linux是如何做增量编译的</h2>
+<p>在编译完成之后总是会生成一些以.cmd作为后缀的文件。这些文件含有两个部分的内容：</p>
+<ol>
+<li>命令行参数</li>
+<li>文件需要的依赖头文件<br>
+cmd文件的内容样式如下：（这里以.vmlinux.cmd为例子）</li>
+</ol>
+<pre><code class="language-Makefile">cmd_vmlinux := sh scripts/link-vmlinux.sh "ld.lld" "-EL  -maarch64elf -z norelro" "--no-undefined -X -shared -Bsymbolic -z notext  --no-apply-dynamic-relocs --fix-cortex-a53-843419 --build-id=sha1 --pack-dyn-relocs=relr --use-android-relr-tags --orphan-handling=warn";  true
+
+source_vmlinux := scripts/link-vmlinux.sh
+
+deps_vmlinux := \
+    $(wildcard include/config/LTO_CLANG) \
+    $(wildcard include/config/MODVERSIONS) \
+    $(wildcard include/config/STACK_VALIDATION) \
+</code></pre>
+<p>文件里面定义的deps_vmlinux变量表示了依赖的头文件，在include/config下有很多这种大写的文件，这些文件都是空文件。wildcard是make中的一个语法[3]，用来对内容做拓展。只要字符串匹配到了pattern就符合wildcard。</p>
+<p>举个例子$(wildcard *.c)将会获得当前目录下的所有.c文件。还有一些比较常用的Make里面的Textfunction，比如patsubst，filter等[4]。</p>
+<p>gcc提供了编译参数 -MD 将这些依赖存储到一个文件中。例如下面这个例子在编译C的flag里面加了-MD并且把内容存在$(depfile)。Linux在编译的时候将这些depfile存储起来（虽然我编译之后似乎看不到很多的.d文件，先暂时这么理解了）</p>
+<pre><code class="language-Makefile"># In scripts/Makefile.lib
+c_flags        = -Wp,-MD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
+                 -include $(srctree)/include/linux/compiler_types.h       \
+                 $(__c_flags) $(modkern_cflags)                           \
+                 $(basename_flags) $(modname_flags)
+</code></pre>
+<p>.d文件的内容就像下面这样：（以编译完成之后生成的.missing-syscalls.d)</p>
+<pre><code class="language-D">-.o: include/linux/compiler-version.h include/linux/kconfig.h \
+  include/generated/autoconf.h include/linux/compiler_types.h \
+  include/linux/compiler_attributes.h include/linux/compiler-clang.h \
+  arch/arm64/include/asm/compiler.h \
+  arch/arm64/include/generated/uapi/asm/types.h \
+  include/uapi/asm-generic/types.h include/asm-generic/int-ll64.h \
+  include/uapi/asm-generic/int-ll64.h \
+  arch/arm64/include/uapi/asm/bitsperlong.h \
+  include/asm-generic/bitsperlong.h \
+  include/uapi/asm-generic/bitsperlong.h arch/arm64/include/asm/unistd.h \
+  arch/arm64/include/uapi/asm/unistd.h include/uapi/asm-generic/unistd.h
+</code></pre>
+<p>xdep程序会读取.d文件和.cmd文件去追踪文件是否需要重新编译。具体的操作参考下面[2]：</p>
+<blockquote>
+<p>The secret behind this is that fixdep will parse the depfile (.d file), then parse all the dependency files inside, search the text for all the CONFIG_ strings, convert them to the corresponding empty header file, and add them to the target's prerequisites. Every time the configuration changes, the corresponding empty header file will be updated, too, so kbuild can detect that change and rebuild the target that depends on it. Because the command line is also recorded, it is easy to compare the last and current compiling parameters.</p>
+</blockquote>
+<p>翻译过来的大致意思是fixdep会将.d文件中的依赖头文件提取出来然后搜索以CONFIG_开头的字符串将他们变成空的header file，把他们加进目标的依赖文件中。每次设置改变了，空头文件也会改变，所以Kbuild就会重新编译它们。因为命令行也存储了，所以也能很容易比较命令行是不是相同。</p>
+<p>疑问：文件内容更改时，Linux的Kbuild是怎么察觉并做增量编译的呢？是否只有在config修改的时候才会做增量编译？</p>
+<h3>编译完毕产生的vmlinux和bzImage的区别</h3>
+<p>vmlinux和bzImage的区别一句话来说就是bzImage比vmlinux多链接了一些.o文件[5]<br>
+bzImage 文件采用特定格式。它包含串联<code>bootsect.o</code>的 + <code>setup.o</code>  + <code>misc.o</code> +<br>
+<code>piggy.o</code> 。 <code>piggy.o</code>  包含 gzip 压缩的 vmlinux 文件的数据部分。<br>
+vmlinux  是一个静态链接的可执行文件，其中包含 Linux 支持的目标文件格式之一的 Linux 内核，其中包括可执行和可链接格式 （ELF） 和通用对象文件格式 （COFF）。</p>
+<p>附带一张抽象的图： （并不是完全看懂了）</p>
+<h2>参考文献</h2>
+<p>[1] https://docs.kernel.org/kbuild/kbuild.html</p>
+<p>[2] https://opensource.com/article/18/10/kbuild-and-kconfig<br>
+[3] https://www.gnu.org/software/make/manual/html_node/Wildcard-Function.html<br>
+[4] https://www.gnu.org/software/make/manual/html_node/Text-Functions.html<br>
+[5] https://en.wikipedia.org/wiki/Vmlinux</p>
+<h2>注意</h2>
+<p>随着时间的推移一些操作可能并不按照该文描述的那样。Kbuild和Kconfig在Linux中的使用方式可能有所变化。</p>
+</div><footer class="article_footer__5JN_G"><div class="article_navigation__fJhBJ"><a class="article_backButton__FZQSF" href="/blog">返回文章列表</a></div></footer></article></main><footer class="footer"><p>© 2024 个人博客. All rights reserved.</p></footer></div></div><script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"article":{"id":"简要解释Kconfig和Kbuild","contentHtml":"\u003ch2\u003e问题\u003c/h2\u003e\n\u003col\u003e\n\u003cli\u003eKconfig/KBuild是什么\u003c/li\u003e\n\u003cli\u003eKconfig/KBuild在Linux中是怎么使用的\u003c/li\u003e\n\u003cli\u003eLinux在执行编译涉及到了大致哪些操作\u003c/li\u003e\n\u003cli\u003eLinux如何做增量编译的？它是如何知道哪些文件需要重新编译\u003c/li\u003e\n\u003cli\u003e编译完毕产生的vmlinux和bzImage的区别\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3\u003eKconfig/Kbuild是什么; 在Linux中怎么使用的; Kbuild执行时做了哪些递归编译\u003c/h3\u003e\n\u003cp\u003eKconfig是用来批量管理config的工具，本质上Kconfig只是一种语言。在Linux中执行 make help 可以查看到有关设置的各种含义，其中config相关的含义在 Configuration targets: 下面。其中用的最多的是menuconfig，以菜单的形式编辑和查看config。\u003c/p\u003e\n\u003cp\u003eKbuild在Linux编译时生成modules.order, modules.builtin, modules.builtin.modinfo这些文件。使用Kbuild构建可以设置很多环境变量[1]。\u003c/p\u003e\n\u003cp\u003eKbuild用来触发递归的make操作，Kbuild用来管理大型的项目很合适。Kbuild可以将构建分到各个组件中。\u003c/p\u003e\n\u003cp\u003eKbuild系统中的Makefile包含下面几个部分：\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003eMakefile： 顶层的Makefile\u003c/li\u003e\n\u003cli\u003e.config：编译设置\u003c/li\u003e\n\u003cli\u003earch/$(ARCH)/Makefile：不同架构的Makefile，供给顶层使用\u003c/li\u003e\n\u003cli\u003escripts/Makefile.*: 描述了所有Kbuild makefiles的基本的编译规则\u003cbr\u003e\n在顶层Makefile里面会定义需要link到vmlinux的一些需要构建的对象\u003c/li\u003e\n\u003c/ol\u003e\n\u003cpre\u003e\u003ccode class=\"language-Makefile\"\u003ecore-y := init/ usr/  \r\ndrivers-y : $=$ drivers/ sound/  \r\ndrivers-\\$(CONFIG_SAMPLES) $+=$ samples/  \r\ndrivers-\\$(CONFIG_NET) $+=$ net/  \r\ndrivers-y $+=$ virt/  \r\nlibs-y : $=$ lib/  \n\u003c/code\u003e\u003c/pre\u003e\n\u003ch4\u003e然后在编译vmlinux的时候将编译的目标设置传递给Kbuild\u003c/h4\u003e\n\u003cpre\u003e\u003ccode class=\"language-Makefile\"\u003eifeq (\\$(KBUILD_EXTMOD),)   \r\ncore-y $+=$ kernel/ certs/ mm/ fs/ ipc/ security/ crypto/ block/   \r\n  \r\nifdef CONFIG_RUST   \r\ncore-y $+=$ rust/   \r\nendif   \r\n  \r\nvmlinux-dirs : $=\\$5$ (patsubst %/,%,\\$(filter %/, \\   \r\n\\$(core-y) \\$(core-m) \\$(drivers-y) \\$(drivers-m) \\   \r\n\\$(libs-y) \\$(libs-m)))\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e能看到在某些config开启的情况下之前定义的变量会修改。在Makefile中大概定义了名字类似KBUILD_VMLINUX_*的一些变量，这些变量在编译Linux的时候会决定Kbuild遍历哪些文件以构建vmlinux。下面附带一张18年博客对vmlinux构建的步骤的大致划分[2]。需要注意的是图中的一些变量在最新的Linux里已经不存在了，例如KBUILD_VMLINUX_INIT。这个图只能作为一个简化助于理解编译的过程\u003c/p\u003e\n\u003cp\u003e.config并不是最终kernel build时采用的设置，syncconfig会对.config做处理生成一系列的.conf文件，生成的文件分成三大类：\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e\n\u003cp\u003einclude/config/auto.conf \u0026#x26; include/config/tristate.conf这两个文件用于make进程处理一些设置\u003c/p\u003e\n\u003c/li\u003e\n\u003cli\u003e\n\u003cp\u003einclude/generated/autoconf.h这个文件用于在C文件中使用设置文件里面全是对设置的#define\u003c/p\u003e\n\u003c/li\u003e\n\u003cli\u003e\n\u003cp\u003einclude/config/*.h：这些都是空的头文件，又来给Kbuild对文件进行追踪判断是否需要重新编译注意：这些文件似乎在新版本Linux中并不是以.h结尾\u003c/p\u003e\n\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch2\u003eLinux是如何做增量编译的\u003c/h2\u003e\n\u003cp\u003e在编译完成之后总是会生成一些以.cmd作为后缀的文件。这些文件含有两个部分的内容：\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e命令行参数\u003c/li\u003e\n\u003cli\u003e文件需要的依赖头文件\u003cbr\u003e\ncmd文件的内容样式如下：（这里以.vmlinux.cmd为例子）\u003c/li\u003e\n\u003c/ol\u003e\n\u003cpre\u003e\u003ccode class=\"language-Makefile\"\u003ecmd_vmlinux := sh scripts/link-vmlinux.sh \"ld.lld\" \"-EL  -maarch64elf -z norelro\" \"--no-undefined -X -shared -Bsymbolic -z notext  --no-apply-dynamic-relocs --fix-cortex-a53-843419 --build-id=sha1 --pack-dyn-relocs=relr --use-android-relr-tags --orphan-handling=warn\";  true\r\n\r\nsource_vmlinux := scripts/link-vmlinux.sh\r\n\r\ndeps_vmlinux := \\\r\n    $(wildcard include/config/LTO_CLANG) \\\r\n    $(wildcard include/config/MODVERSIONS) \\\r\n    $(wildcard include/config/STACK_VALIDATION) \\\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e文件里面定义的deps_vmlinux变量表示了依赖的头文件，在include/config下有很多这种大写的文件，这些文件都是空文件。wildcard是make中的一个语法[3]，用来对内容做拓展。只要字符串匹配到了pattern就符合wildcard。\u003c/p\u003e\n\u003cp\u003e举个例子$(wildcard *.c)将会获得当前目录下的所有.c文件。还有一些比较常用的Make里面的Textfunction，比如patsubst，filter等[4]。\u003c/p\u003e\n\u003cp\u003egcc提供了编译参数 -MD 将这些依赖存储到一个文件中。例如下面这个例子在编译C的flag里面加了-MD并且把内容存在$(depfile)。Linux在编译的时候将这些depfile存储起来（虽然我编译之后似乎看不到很多的.d文件，先暂时这么理解了）\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-Makefile\"\u003e# In scripts/Makefile.lib\r\nc_flags        = -Wp,-MD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \\\r\n                 -include $(srctree)/include/linux/compiler_types.h       \\\r\n                 $(__c_flags) $(modkern_cflags)                           \\\r\n                 $(basename_flags) $(modname_flags)\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e.d文件的内容就像下面这样：（以编译完成之后生成的.missing-syscalls.d)\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-D\"\u003e-.o: include/linux/compiler-version.h include/linux/kconfig.h \\\r\n  include/generated/autoconf.h include/linux/compiler_types.h \\\r\n  include/linux/compiler_attributes.h include/linux/compiler-clang.h \\\r\n  arch/arm64/include/asm/compiler.h \\\r\n  arch/arm64/include/generated/uapi/asm/types.h \\\r\n  include/uapi/asm-generic/types.h include/asm-generic/int-ll64.h \\\r\n  include/uapi/asm-generic/int-ll64.h \\\r\n  arch/arm64/include/uapi/asm/bitsperlong.h \\\r\n  include/asm-generic/bitsperlong.h \\\r\n  include/uapi/asm-generic/bitsperlong.h arch/arm64/include/asm/unistd.h \\\r\n  arch/arm64/include/uapi/asm/unistd.h include/uapi/asm-generic/unistd.h\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003exdep程序会读取.d文件和.cmd文件去追踪文件是否需要重新编译。具体的操作参考下面[2]：\u003c/p\u003e\n\u003cblockquote\u003e\n\u003cp\u003eThe secret behind this is that fixdep will parse the depfile (.d file), then parse all the dependency files inside, search the text for all the CONFIG_ strings, convert them to the corresponding empty header file, and add them to the target's prerequisites. Every time the configuration changes, the corresponding empty header file will be updated, too, so kbuild can detect that change and rebuild the target that depends on it. Because the command line is also recorded, it is easy to compare the last and current compiling parameters.\u003c/p\u003e\n\u003c/blockquote\u003e\n\u003cp\u003e翻译过来的大致意思是fixdep会将.d文件中的依赖头文件提取出来然后搜索以CONFIG_开头的字符串将他们变成空的header file，把他们加进目标的依赖文件中。每次设置改变了，空头文件也会改变，所以Kbuild就会重新编译它们。因为命令行也存储了，所以也能很容易比较命令行是不是相同。\u003c/p\u003e\n\u003cp\u003e疑问：文件内容更改时，Linux的Kbuild是怎么察觉并做增量编译的呢？是否只有在config修改的时候才会做增量编译？\u003c/p\u003e\n\u003ch3\u003e编译完毕产生的vmlinux和bzImage的区别\u003c/h3\u003e\n\u003cp\u003evmlinux和bzImage的区别一句话来说就是bzImage比vmlinux多链接了一些.o文件[5]\u003cbr\u003e\nbzImage 文件采用特定格式。它包含串联\u003ccode\u003ebootsect.o\u003c/code\u003e的 + \u003ccode\u003esetup.o\u003c/code\u003e  + \u003ccode\u003emisc.o\u003c/code\u003e +\u003cbr\u003e\n\u003ccode\u003epiggy.o\u003c/code\u003e 。 \u003ccode\u003epiggy.o\u003c/code\u003e  包含 gzip 压缩的 vmlinux 文件的数据部分。\u003cbr\u003e\nvmlinux  是一个静态链接的可执行文件，其中包含 Linux 支持的目标文件格式之一的 Linux 内核，其中包括可执行和可链接格式 （ELF） 和通用对象文件格式 （COFF）。\u003c/p\u003e\n\u003cp\u003e附带一张抽象的图： （并不是完全看懂了）\u003c/p\u003e\n\u003ch2\u003e参考文献\u003c/h2\u003e\n\u003cp\u003e[1] https://docs.kernel.org/kbuild/kbuild.html\u003c/p\u003e\n\u003cp\u003e[2] https://opensource.com/article/18/10/kbuild-and-kconfig\u003cbr\u003e\n[3] https://www.gnu.org/software/make/manual/html_node/Wildcard-Function.html\u003cbr\u003e\n[4] https://www.gnu.org/software/make/manual/html_node/Text-Functions.html\u003cbr\u003e\n[5] https://en.wikipedia.org/wiki/Vmlinux\u003c/p\u003e\n\u003ch2\u003e注意\u003c/h2\u003e\n\u003cp\u003e随着时间的推移一些操作可能并不按照该文描述的那样。Kbuild和Kconfig在Linux中的使用方式可能有所变化。\u003c/p\u003e\n","title":"Kconfig/KBuild in Linux​  ","date":"2024-5-12","category":"Linux","tags":["Linux","Kconfig","KBuild"],"summary":"介绍linux使用的Kconfig和Kbuild系统","views":0}},"__N_SSG":true},"page":"/blog/[id]","query":{"id":"简要解释Kconfig和Kbuild"},"buildId":"20UMOGqztqylNLBnC72Ga","isFallback":false,"gsp":true,"scriptLoader":[]}</script></body></html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charSet="utf-8" data-next-head=""/><meta name="viewport" content="width=device-width, initial-scale=1" data-next-head=""/><meta charSet="utf-8"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/><link rel="preload" href="/_next/static/css/71c3005585daf34a.css" as="style"/><link rel="stylesheet" href="/_next/static/css/71c3005585daf34a.css" data-n-g=""/><link rel="preload" href="/_next/static/css/d30dc8bfc45a058b.css" as="style"/><link rel="stylesheet" href="/_next/static/css/d30dc8bfc45a058b.css" data-n-p=""/><noscript data-n-css=""></noscript><script defer="" nomodule="" src="/_next/static/chunks/polyfills-42372ed130431b0a.js"></script><script src="/_next/static/chunks/webpack-8cac0b4b405cede1.js" defer=""></script><script src="/_next/static/chunks/framework-b96261d959dd50e7.js" defer=""></script><script src="/_next/static/chunks/main-5641a5f61dc27c0f.js" defer=""></script><script src="/_next/static/chunks/pages/_app-a20eeb038bec1046.js" defer=""></script><script src="/_next/static/chunks/106-a71b11894cb18610.js" defer=""></script><script src="/_next/static/chunks/pages/blog/%5Bid%5D-99312d6fcde602f9.js" defer=""></script><script src="/_next/static/20UMOGqztqylNLBnC72Ga/_buildManifest.js" defer=""></script><script src="/_next/static/20UMOGqztqylNLBnC72Ga/_ssgManifest.js" defer=""></script></head><body><div id="__next"><div class="layout"><header class="nav"><div class="nav-container"><a href="/" class="nav-brand">人生何处不青山</a><div class="nav-links"><a href="/" class="nav-link">首页</a><a href="/blog" class="nav-link">文章</a><a href="/categories" class="nav-link">分类</a><a href="/about" class="nav-link">关于我</a></div></div></header><main class="container"><article class="article_container__uEGY_"><header class="article_header__Dfu8i"><h1 class="article_title__Kemkb">go slice</h1><div class="article_meta__EQMJH"><span class="article_date__8Zsel">2023-07-31</span><a class="article_category__FEprG" href="/articles?category=GO">GO</a></div><div class="article_tags__SeZQL"><a class="article_tag__xFxqV" href="/articles?tag=GO">#<!-- -->GO</a></div></header><div class="article_content__xXtEi"><h1>go slice</h1>
+<h2>从数组中得到切片</h2>
+<p><code>c[begin:end:cap]</code></p>
+<p>如果不指定第三个参数，那么切片的容量是 <code>cap(c)-begin</code>，例如 <code>var c = []int{1,2,3,4,5,6}</code>那么 <code>cap(c) = 6</code>，那么代码 <code>b := c[1:3]</code>的长度是2，容量是5</p>
+<h2>make得到切片</h2>
+<pre><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+    s1 := []int{0, 1, 2, 3, 8: 100} // 通过初始化表达式构造，可使用索引号。
+    fmt.Println(s1, len(s1), cap(s1))
+
+    s2 := make([]int, 6, 8) // 使用 make 创建，指定 len 和 cap 值。
+    fmt.Println(s2, len(s2), cap(s2))
+
+    s3 := make([]int, 6) // 省略 cap，相当于 cap = len。
+    fmt.Println(s3, len(s3), cap(s3))
+}
+</code></pre>
+<p>这是输出的结果：</p>
+<pre><code class="language-txt">    [0 1 2 3 0 0 0 0 100] 9 9
+    [0 0 0 0 0 0] 6 8
+    [0 0 0 0 0 0] 6 6
+</code></pre>
+<p>创建的时候默认最长长度就是cap</p>
+<p>slice的底层内存结构：</p>
+<p><img src="../images/go_slice_p1.png" alt="go_slice_p1"></p>
+<p>可以通过&#x26;操作符直接获取底层数组</p>
+<pre><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+    s := []int{0, 1, 2, 3}
+    p := &#x26;s[2] // *int, 获取底层数组元素指针。
+    *p += 100
+
+    fmt.Println(s)
+}
+</code></pre>
+<p>使用append在slice后添加内容
+<code>append(a,b...)</code>在后面追加其他切片
+<code>append(a,1,2,3)</code>在后面追加内容
+特殊场景可以把字符串接到byte切片中
+<code>append([]byte("hello"), "world"...)</code>
+append返回一个新的切片，切片的底层数组是相同的，输出结果不同是因为切片的长度不同导致的。如果append没有超过cap，那么新切片的cap不变，否则重新分配一个底层数组，和原数组无关，并且新切片的cap会适当变大。</p>
+<h2>slice的增长规则</h2>
+<p>在 <code>runtime\slice.go</code>中 <code>growslice</code>函数</p>
+<pre><code class="language-go">newcap := oldCap
+doublecap := newcap + newcap
+if newLen > doublecap {
+    newcap = newLen
+} else {
+    const threshold = 256
+    if oldCap &#x3C; threshold {
+        newcap = doublecap
+    } else {
+        // Check 0 &#x3C; newcap to detect overflow
+        // and prevent an infinite loop.
+        for 0 &#x3C; newcap &#x26;&#x26; newcap &#x3C; newLen {
+            // Transition from growing 2x for small slices
+            // to growing 1.25x for large slices. This formula
+            // gives a smooth-ish transition between the two.
+            newcap += (newcap + 3*threshold) / 4
+        }
+        // Set newcap to the requested cap when
+        // the newcap calculation overflowed.
+        if newcap &#x3C;= 0 {
+            newcap = newLen
+        }
+    }
+}
+</code></pre>
+<pre><code class="language-txt">oldPtr = pointer to the slice's backing array
+newLen = new length (= oldLen + num)
+oldCap = original slice's capacity.
+num = number of elements being added
+</code></pre>
+<p>每个版本的go语言给出的源码是不一样的，根据版本不同有不同的增长方式</p>
+</div><footer class="article_footer__5JN_G"><div class="article_navigation__fJhBJ"><a class="article_backButton__FZQSF" href="/blog">返回文章列表</a></div></footer></article></main><footer class="footer"><p>© 2024 个人博客. All rights reserved.</p></footer></div></div><script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"article":{"id":"go_slice","contentHtml":"\u003ch1\u003ego slice\u003c/h1\u003e\n\u003ch2\u003e从数组中得到切片\u003c/h2\u003e\n\u003cp\u003e\u003ccode\u003ec[begin:end:cap]\u003c/code\u003e\u003c/p\u003e\n\u003cp\u003e如果不指定第三个参数，那么切片的容量是 \u003ccode\u003ecap(c)-begin\u003c/code\u003e，例如 \u003ccode\u003evar c = []int{1,2,3,4,5,6}\u003c/code\u003e那么 \u003ccode\u003ecap(c) = 6\u003c/code\u003e，那么代码 \u003ccode\u003eb := c[1:3]\u003c/code\u003e的长度是2，容量是5\u003c/p\u003e\n\u003ch2\u003emake得到切片\u003c/h2\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003epackage main\r\n\r\nimport \"fmt\"\r\n\r\nfunc main() {\r\n    s1 := []int{0, 1, 2, 3, 8: 100} // 通过初始化表达式构造，可使用索引号。\r\n    fmt.Println(s1, len(s1), cap(s1))\r\n\r\n    s2 := make([]int, 6, 8) // 使用 make 创建，指定 len 和 cap 值。\r\n    fmt.Println(s2, len(s2), cap(s2))\r\n\r\n    s3 := make([]int, 6) // 省略 cap，相当于 cap = len。\r\n    fmt.Println(s3, len(s3), cap(s3))\r\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e这是输出的结果：\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-txt\"\u003e    [0 1 2 3 0 0 0 0 100] 9 9\r\n    [0 0 0 0 0 0] 6 8\r\n    [0 0 0 0 0 0] 6 6\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e创建的时候默认最长长度就是cap\u003c/p\u003e\n\u003cp\u003eslice的底层内存结构：\u003c/p\u003e\n\u003cp\u003e\u003cimg src=\"../images/go_slice_p1.png\" alt=\"go_slice_p1\"\u003e\u003c/p\u003e\n\u003cp\u003e可以通过\u0026#x26;操作符直接获取底层数组\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003epackage main\r\n\r\nimport \"fmt\"\r\n\r\nfunc main() {\r\n    s := []int{0, 1, 2, 3}\r\n    p := \u0026#x26;s[2] // *int, 获取底层数组元素指针。\r\n    *p += 100\r\n\r\n    fmt.Println(s)\r\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e使用append在slice后添加内容\r\n\u003ccode\u003eappend(a,b...)\u003c/code\u003e在后面追加其他切片\r\n\u003ccode\u003eappend(a,1,2,3)\u003c/code\u003e在后面追加内容\r\n特殊场景可以把字符串接到byte切片中\r\n\u003ccode\u003eappend([]byte(\"hello\"), \"world\"...)\u003c/code\u003e\r\nappend返回一个新的切片，切片的底层数组是相同的，输出结果不同是因为切片的长度不同导致的。如果append没有超过cap，那么新切片的cap不变，否则重新分配一个底层数组，和原数组无关，并且新切片的cap会适当变大。\u003c/p\u003e\n\u003ch2\u003eslice的增长规则\u003c/h2\u003e\n\u003cp\u003e在 \u003ccode\u003eruntime\\slice.go\u003c/code\u003e中 \u003ccode\u003egrowslice\u003c/code\u003e函数\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003enewcap := oldCap\r\ndoublecap := newcap + newcap\r\nif newLen \u003e doublecap {\r\n    newcap = newLen\r\n} else {\r\n    const threshold = 256\r\n    if oldCap \u0026#x3C; threshold {\r\n        newcap = doublecap\r\n    } else {\r\n        // Check 0 \u0026#x3C; newcap to detect overflow\r\n        // and prevent an infinite loop.\r\n        for 0 \u0026#x3C; newcap \u0026#x26;\u0026#x26; newcap \u0026#x3C; newLen {\r\n            // Transition from growing 2x for small slices\r\n            // to growing 1.25x for large slices. This formula\r\n            // gives a smooth-ish transition between the two.\r\n            newcap += (newcap + 3*threshold) / 4\r\n        }\r\n        // Set newcap to the requested cap when\r\n        // the newcap calculation overflowed.\r\n        if newcap \u0026#x3C;= 0 {\r\n            newcap = newLen\r\n        }\r\n    }\r\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003cpre\u003e\u003ccode class=\"language-txt\"\u003eoldPtr = pointer to the slice's backing array\r\nnewLen = new length (= oldLen + num)\r\noldCap = original slice's capacity.\r\nnum = number of elements being added\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e每个版本的go语言给出的源码是不一样的，根据版本不同有不同的增长方式\u003c/p\u003e\n","title":"go slice","date":"2023-07-31","category":"GO","tags":["GO"],"summary":"介绍go slice的使用和原理","views":0}},"__N_SSG":true},"page":"/blog/[id]","query":{"id":"go_slice"},"buildId":"20UMOGqztqylNLBnC72Ga","isFallback":false,"gsp":true,"scriptLoader":[]}</script></body></html>

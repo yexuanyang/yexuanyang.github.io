@@ -1,0 +1,135 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charSet="utf-8" data-next-head=""/><meta name="viewport" content="width=device-width, initial-scale=1" data-next-head=""/><meta charSet="utf-8"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/><link rel="preload" href="/_next/static/css/71c3005585daf34a.css" as="style"/><link rel="stylesheet" href="/_next/static/css/71c3005585daf34a.css" data-n-g=""/><link rel="preload" href="/_next/static/css/d30dc8bfc45a058b.css" as="style"/><link rel="stylesheet" href="/_next/static/css/d30dc8bfc45a058b.css" data-n-p=""/><noscript data-n-css=""></noscript><script defer="" nomodule="" src="/_next/static/chunks/polyfills-42372ed130431b0a.js"></script><script src="/_next/static/chunks/webpack-8cac0b4b405cede1.js" defer=""></script><script src="/_next/static/chunks/framework-b96261d959dd50e7.js" defer=""></script><script src="/_next/static/chunks/main-5641a5f61dc27c0f.js" defer=""></script><script src="/_next/static/chunks/pages/_app-a20eeb038bec1046.js" defer=""></script><script src="/_next/static/chunks/106-a71b11894cb18610.js" defer=""></script><script src="/_next/static/chunks/pages/blog/%5Bid%5D-99312d6fcde602f9.js" defer=""></script><script src="/_next/static/20UMOGqztqylNLBnC72Ga/_buildManifest.js" defer=""></script><script src="/_next/static/20UMOGqztqylNLBnC72Ga/_ssgManifest.js" defer=""></script></head><body><div id="__next"><div class="layout"><header class="nav"><div class="nav-container"><a href="/" class="nav-brand">人生何处不青山</a><div class="nav-links"><a href="/" class="nav-link">首页</a><a href="/blog" class="nav-link">文章</a><a href="/categories" class="nav-link">分类</a><a href="/about" class="nav-link">关于我</a></div></div></header><main class="container"><article class="article_container__uEGY_"><header class="article_header__Dfu8i"><h1 class="article_title__Kemkb">Go语言中的零值、空值和空结构体</h1><div class="article_meta__EQMJH"><span class="article_date__8Zsel">2023-07-31</span><a class="article_category__FEprG" href="/articles?category=GO">GO</a></div><div class="article_tags__SeZQL"><a class="article_tag__xFxqV" href="/articles?tag=GO">#<!-- -->GO</a></div></header><div class="article_content__xXtEi"><h1>go 里面的零值 , 空值 , 空结构体</h1>
+<h2>零值</h2>
+<p>声明变量的时候未初始化，那么变量会自动赋予零值；</p>
+<p><strong>对于值类型：</strong></p>
+<p>对于bool变量赋予false；对于字符串变量赋予""；对于数值类型赋予0</p>
+<p><strong>对于引用类型：</strong></p>
+<p>都是nil，包括指针pointer，函数function，接口interface，切片slice，管道channel，映射map</p>
+<p><strong>注意：<code>：=</code>语法糖是实现的声明并初始化变量，所以变量是分配了内存空间的，这样就不是nil了</strong></p>
+<p>例如：</p>
+<pre><code class="language-go">package main
+
+import "fmt"
+import "reflect"
+
+func main() {
+    var s1 []string
+    s2 := []string{} // 或者等同于 var s2 = []string{}
+
+    fmt.Println(s1 == nil) // true
+    fmt.Println(s2 == nil) // false
+
+    fmt.Println(reflect.DeepEqual(s1, s2)) // false
+
+    fmt.Println(reflect.DeepEqual(s1, []string{}))  // false
+    fmt.Println(reflect.DeepEqual(s2, []string{}))  // true
+}
+</code></pre>
+<p>对于空结构nil也可以调用对象的方法：</p>
+<pre><code class="language-go">package main
+
+import "fmt"
+
+const defaultPath = "/usr/bin/"
+
+type Config struct {
+    path string
+}
+
+func (c *Config) Path() string {
+    //如果对象c是空结构，那么返回默认的值
+    if c == nil {
+            return defaultPath
+    }
+    return c.path
+}
+
+func main() {
+    var c1 *Config
+    var c2 = &#x26;Config{
+            path: "/usr/local/bin/",
+    }
+    fmt.Println(c1.Path(), c2.Path())
+}
+</code></pre>
+<h2>nil</h2>
+<p>nil是 Golang 中唯一没有默认类型的非类型化的值</p>
+<p>nil不是保留关键字，可以给变量命名nil</p>
+<p>nil之间不可以比较，例如 <code>nil==nil</code>这个比较会报错</p>
+<p>对于常见引用类型，nil是他们的零值</p>
+<pre><code class="language-go">package main
+import "fmt"
+func main() {
+    //nil 是常见引用类型的零值
+    var m map[int]string
+    var ptr *int
+    var c chan int
+    var sl []int
+    var f func()
+    var i interface{}
+    fmt.Printf("%#v\n", m)
+    fmt.Printf("%#v\n", ptr)
+    fmt.Printf("%#v\n", c)
+    fmt.Printf("%#v\n", sl)
+    fmt.Printf("%#v\n", f)
+    //接口类型比较特殊，不能确定类型
+    fmt.Printf("%#v\n", i)
+}
+</code></pre>
+<p>输出的结果如下：</p>
+<pre><code class="language-plaintext">map[int]string(nil)
+(*int)(nil)
+(chan int)(nil)
+[]int(nil)
+(func())(nil)
+&#x3C;nil>
+</code></pre>
+<p>不可以使用语法糖直接给变量赋值nil，例如 <code>a := nil</code>会报错，因为编译器不知道a是什么类型的</p>
+<p>可以这样赋值 <code>var a [某个结构] = nil</code>，这样a的类型是某个结构 但是值是nil</p>
+<p>对于nil的比较，nil！=nil的情况。例如：</p>
+<pre><code class="language-go">    var p *int          // (T=*int,V=nil)
+    var i interface{}   // (T=nil,V=nil)
+
+    fmt.Println(p == i) // (T=*int, V=nil) == (T=nil, V=nil) -> false
+    func Foo() error {
+        var err *PathError = nil  // (T=*PathError, V=nil)
+        if bad() {
+            err = ErrBad
+        }
+        return err  // 这将始终返回 non-nil 错误
+    }
+
+    func main() {
+        err := Foo()
+        fmt.Println(err)        // &#x3C;nil>
+        fmt.Println(err == nil) // (T=*PathError, V=nil) == (T=nil, V=nil) -> false
+    }
+</code></pre>
+<p>接口要确定一个变量需要两个基础的属性Type 和 Value，只有两个都相同才相等</p>
+<h3>对于接口类型的空指针判断</h3>
+<pre><code class="language-go">var p *int              // (T=*int, V=nil)
+var i interface{}       // (T=nil, V=nil)
+
+fmt.Println(p == nil)   // true
+fmt.Println(i == nil)   // true
+
+i = p
+
+fmt.Println(i == nil)     // (T=*int, V=nil) == (T=nil, V=nil) -> false
+</code></pre>
+<p>第一个比较输出true因为编译器知道p的类型，可以在比较的时候把表达式 <code>p==nil</code>变成 <code>p==(*int)(nil)</code></p>
+<p>第三个比较输出false因为Type不一样</p>
+<p>所以对于接口类型的空指针判断不一定可以完全依靠 <code>v == nil</code>，有两种方式避免出现上述问题，第一个是用值和类型分别和nil比较；第二是使用反射包reflect</p>
+<h2>空结构</h2>
+<p>不占用任何空间</p>
+<p>嵌套空结构也不占用任何空间</p>
+<p>两个不一样的空结构可能具有相同的地址</p>
+<h2>最佳实践</h2>
+<p>如果在chan中传递消息的时候不在意值，那么可以使用 <code>chan struct{}</code>代替 <code>chan bool</code></p>
+<p>如果想避免unkeyed初始化结构，那么可以这样定义结构体</p>
+<pre><code class="language-go">type Q struct {
+X, Y int
+_ struct{}
+</code></pre>
+<p>这样编译器不允许这样初始化结构体 <code>Q{1,1}</code>而必须要 <code>Q{X:1,Y:1}</code>才可以通过编译</p>
+</div><footer class="article_footer__5JN_G"><div class="article_navigation__fJhBJ"><a class="article_backButton__FZQSF" href="/blog">返回文章列表</a></div></footer></article></main><footer class="footer"><p>© 2024 个人博客. All rights reserved.</p></footer></div></div><script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"article":{"id":"go_null_zeroValue_emptyStruct","contentHtml":"\u003ch1\u003ego 里面的零值 , 空值 , 空结构体\u003c/h1\u003e\n\u003ch2\u003e零值\u003c/h2\u003e\n\u003cp\u003e声明变量的时候未初始化，那么变量会自动赋予零值；\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003e对于值类型：\u003c/strong\u003e\u003c/p\u003e\n\u003cp\u003e对于bool变量赋予false；对于字符串变量赋予\"\"；对于数值类型赋予0\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003e对于引用类型：\u003c/strong\u003e\u003c/p\u003e\n\u003cp\u003e都是nil，包括指针pointer，函数function，接口interface，切片slice，管道channel，映射map\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003e注意：\u003ccode\u003e：=\u003c/code\u003e语法糖是实现的声明并初始化变量，所以变量是分配了内存空间的，这样就不是nil了\u003c/strong\u003e\u003c/p\u003e\n\u003cp\u003e例如：\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003epackage main\r\n\r\nimport \"fmt\"\r\nimport \"reflect\"\r\n\r\nfunc main() {\r\n    var s1 []string\r\n    s2 := []string{} // 或者等同于 var s2 = []string{}\r\n\r\n    fmt.Println(s1 == nil) // true\r\n    fmt.Println(s2 == nil) // false\r\n\r\n    fmt.Println(reflect.DeepEqual(s1, s2)) // false\r\n\r\n    fmt.Println(reflect.DeepEqual(s1, []string{}))  // false\r\n    fmt.Println(reflect.DeepEqual(s2, []string{}))  // true\r\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e对于空结构nil也可以调用对象的方法：\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003epackage main\r\n\r\nimport \"fmt\"\r\n\r\nconst defaultPath = \"/usr/bin/\"\r\n\r\ntype Config struct {\r\n    path string\r\n}\r\n\r\nfunc (c *Config) Path() string {\r\n    //如果对象c是空结构，那么返回默认的值\r\n    if c == nil {\r\n            return defaultPath\r\n    }\r\n    return c.path\r\n}\r\n\r\nfunc main() {\r\n    var c1 *Config\r\n    var c2 = \u0026#x26;Config{\r\n            path: \"/usr/local/bin/\",\r\n    }\r\n    fmt.Println(c1.Path(), c2.Path())\r\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch2\u003enil\u003c/h2\u003e\n\u003cp\u003enil是 Golang 中唯一没有默认类型的非类型化的值\u003c/p\u003e\n\u003cp\u003enil不是保留关键字，可以给变量命名nil\u003c/p\u003e\n\u003cp\u003enil之间不可以比较，例如 \u003ccode\u003enil==nil\u003c/code\u003e这个比较会报错\u003c/p\u003e\n\u003cp\u003e对于常见引用类型，nil是他们的零值\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003epackage main\r\nimport \"fmt\"\r\nfunc main() {\r\n    //nil 是常见引用类型的零值\r\n    var m map[int]string\r\n    var ptr *int\r\n    var c chan int\r\n    var sl []int\r\n    var f func()\r\n    var i interface{}\r\n    fmt.Printf(\"%#v\\n\", m)\r\n    fmt.Printf(\"%#v\\n\", ptr)\r\n    fmt.Printf(\"%#v\\n\", c)\r\n    fmt.Printf(\"%#v\\n\", sl)\r\n    fmt.Printf(\"%#v\\n\", f)\r\n    //接口类型比较特殊，不能确定类型\r\n    fmt.Printf(\"%#v\\n\", i)\r\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e输出的结果如下：\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-plaintext\"\u003emap[int]string(nil)\r\n(*int)(nil)\r\n(chan int)(nil)\r\n[]int(nil)\r\n(func())(nil)\r\n\u0026#x3C;nil\u003e\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e不可以使用语法糖直接给变量赋值nil，例如 \u003ccode\u003ea := nil\u003c/code\u003e会报错，因为编译器不知道a是什么类型的\u003c/p\u003e\n\u003cp\u003e可以这样赋值 \u003ccode\u003evar a [某个结构] = nil\u003c/code\u003e，这样a的类型是某个结构 但是值是nil\u003c/p\u003e\n\u003cp\u003e对于nil的比较，nil！=nil的情况。例如：\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003e    var p *int          // (T=*int,V=nil)\r\n    var i interface{}   // (T=nil,V=nil)\r\n\r\n    fmt.Println(p == i) // (T=*int, V=nil) == (T=nil, V=nil) -\u003e false\r\n    func Foo() error {\r\n        var err *PathError = nil  // (T=*PathError, V=nil)\r\n        if bad() {\r\n            err = ErrBad\r\n        }\r\n        return err  // 这将始终返回 non-nil 错误\r\n    }\r\n\r\n    func main() {\r\n        err := Foo()\r\n        fmt.Println(err)        // \u0026#x3C;nil\u003e\r\n        fmt.Println(err == nil) // (T=*PathError, V=nil) == (T=nil, V=nil) -\u003e false\r\n    }\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e接口要确定一个变量需要两个基础的属性Type 和 Value，只有两个都相同才相等\u003c/p\u003e\n\u003ch3\u003e对于接口类型的空指针判断\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003evar p *int              // (T=*int, V=nil)\r\nvar i interface{}       // (T=nil, V=nil)\r\n\r\nfmt.Println(p == nil)   // true\r\nfmt.Println(i == nil)   // true\r\n\r\ni = p\r\n\r\nfmt.Println(i == nil)     // (T=*int, V=nil) == (T=nil, V=nil) -\u003e false\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e第一个比较输出true因为编译器知道p的类型，可以在比较的时候把表达式 \u003ccode\u003ep==nil\u003c/code\u003e变成 \u003ccode\u003ep==(*int)(nil)\u003c/code\u003e\u003c/p\u003e\n\u003cp\u003e第三个比较输出false因为Type不一样\u003c/p\u003e\n\u003cp\u003e所以对于接口类型的空指针判断不一定可以完全依靠 \u003ccode\u003ev == nil\u003c/code\u003e，有两种方式避免出现上述问题，第一个是用值和类型分别和nil比较；第二是使用反射包reflect\u003c/p\u003e\n\u003ch2\u003e空结构\u003c/h2\u003e\n\u003cp\u003e不占用任何空间\u003c/p\u003e\n\u003cp\u003e嵌套空结构也不占用任何空间\u003c/p\u003e\n\u003cp\u003e两个不一样的空结构可能具有相同的地址\u003c/p\u003e\n\u003ch2\u003e最佳实践\u003c/h2\u003e\n\u003cp\u003e如果在chan中传递消息的时候不在意值，那么可以使用 \u003ccode\u003echan struct{}\u003c/code\u003e代替 \u003ccode\u003echan bool\u003c/code\u003e\u003c/p\u003e\n\u003cp\u003e如果想避免unkeyed初始化结构，那么可以这样定义结构体\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-go\"\u003etype Q struct {\r\nX, Y int\r\n_ struct{}\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e这样编译器不允许这样初始化结构体 \u003ccode\u003eQ{1,1}\u003c/code\u003e而必须要 \u003ccode\u003eQ{X:1,Y:1}\u003c/code\u003e才可以通过编译\u003c/p\u003e\n","title":"Go语言中的零值、空值和空结构体","date":"2023-07-31","category":"GO","tags":["GO"],"summary":"详细介绍Go语言中的零值、nil值和空结构体的概念，包括它们的特点、使用场景和最佳实践","views":0}},"__N_SSG":true},"page":"/blog/[id]","query":{"id":"go_null_zeroValue_emptyStruct"},"buildId":"20UMOGqztqylNLBnC72Ga","isFallback":false,"gsp":true,"scriptLoader":[]}</script></body></html>

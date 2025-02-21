@@ -1,0 +1,49 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charSet="utf-8" data-next-head=""/><meta name="viewport" content="width=device-width, initial-scale=1" data-next-head=""/><meta charSet="utf-8"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/><link rel="preload" href="/_next/static/css/71c3005585daf34a.css" as="style"/><link rel="stylesheet" href="/_next/static/css/71c3005585daf34a.css" data-n-g=""/><link rel="preload" href="/_next/static/css/d30dc8bfc45a058b.css" as="style"/><link rel="stylesheet" href="/_next/static/css/d30dc8bfc45a058b.css" data-n-p=""/><noscript data-n-css=""></noscript><script defer="" nomodule="" src="/_next/static/chunks/polyfills-42372ed130431b0a.js"></script><script src="/_next/static/chunks/webpack-8cac0b4b405cede1.js" defer=""></script><script src="/_next/static/chunks/framework-b96261d959dd50e7.js" defer=""></script><script src="/_next/static/chunks/main-5641a5f61dc27c0f.js" defer=""></script><script src="/_next/static/chunks/pages/_app-a20eeb038bec1046.js" defer=""></script><script src="/_next/static/chunks/106-a71b11894cb18610.js" defer=""></script><script src="/_next/static/chunks/pages/blog/%5Bid%5D-99312d6fcde602f9.js" defer=""></script><script src="/_next/static/20UMOGqztqylNLBnC72Ga/_buildManifest.js" defer=""></script><script src="/_next/static/20UMOGqztqylNLBnC72Ga/_ssgManifest.js" defer=""></script></head><body><div id="__next"><div class="layout"><header class="nav"><div class="nav-container"><a href="/" class="nav-brand">人生何处不青山</a><div class="nav-links"><a href="/" class="nav-link">首页</a><a href="/blog" class="nav-link">文章</a><a href="/categories" class="nav-link">分类</a><a href="/about" class="nav-link">关于我</a></div></div></header><main class="container"><article class="article_container__uEGY_"><header class="article_header__Dfu8i"><h1 class="article_title__Kemkb">根据Ubuntu22.04-base制作arm64架构的ext4image文件系统供QEMU使用</h1><div class="article_meta__EQMJH"><span class="article_date__8Zsel">2024-9-23</span><a class="article_category__FEprG" href="/articles?category=QEMU">QEMU</a></div><div class="article_tags__SeZQL"><a class="article_tag__xFxqV" href="/articles?tag=QEMU">#<!-- -->QEMU</a><a class="article_tag__xFxqV" href="/articles?tag=Ubuntu">#<!-- -->Ubuntu</a><a class="article_tag__xFxqV" href="/articles?tag=ext4">#<!-- -->ext4</a><a class="article_tag__xFxqV" href="/articles?tag=file%20system">#<!-- -->file system</a></div></header><div class="article_content__xXtEi"><h2>参考资料</h2>
+<p>https://github.com/wincle626/Prepare_Ubuntu_Rootfs_for_Aarch64_on_x86_Host​<br>
+https://coldnew.github.io/1ad4bf6d/<br>
+https://developer.aliyun.com/article/1172124<br>
+https://www.cnblogs.com/wsg1100/p/13127636.html<br>
+https://blog.csdn.net/u013113549/article/details/127337506</p>
+<h3>下载Ubuntu22.04-base文件系统</h3>
+<p>浏览器直接搜索Ubuntu22.04 base arm64，基本上就能找到对应的文件系统压缩包在https://cdimage.ubuntu.com/ubuntu-base/releases/22.04/release/这里能找到22.04的根文件系统</p>
+<p>这些操作都需要在root下执行，并且全程工作环境在/root/rootfs（chroot之前）和/（chroot之后）</p>
+<p>1 cd &#x26;&#x26; mkdir rootfs &#x26;&#x26; cd rootfs<br>
+2 wget https://cdimage.ubuntu.com/ubuntu-base/releases/22.04/release/ubuntu<br>
+base-22.04-base-arm64.tar.gz<br>
+3 mkdir ubuntu22.04-arm64 &#x26;&#x26; tar -xvf ubuntu-base-22.04-base-arm64.tar.gz -C<br>
+ubuntu22.04-arm64<br>
+4 apt update &#x26;&#x26; apt install qemu-utils qemu-user-static qemu<br>
+5<br>
+6 # 这一步是为了让x86_64机器可以chroot到arm64的rootfs中；如果架构一致，则不需要执行<br>
+7 cp /usr/bin/qemu-aarch64-static ubuntu22.04-arm64/usr/bin/<br>
+8<br>
+9 mount --bind /dev ubuntu22.04-arm64/dev<br>
+10 mount -t proc proc ubuntu22.04-arm64/proc<br>
+11 mount -t sysfs sysfs ubuntu22.04-arm64/sys<br>
+12 cp -b /etc/resolv.conf ubuntu22.04-arm64/etc/resolv.conf<br>
+13 chroot ubuntu22.04-arm64<br>
+1 apt update &#x26;&#x26; apt upgrade -y<br>
+2 useradd -b '/bin/bash' -m $-\mathsf{G}$ adm,sudo <br>
+3 passwd root<br>
+4 passwd <br>
+5 # 如果还需要安装别的环境，在exit之前操作，安装到rootfs中<br>
+6 exit</p>
+<p>退出根文件系统，先把前面mount的设备umount，之后创建ext4文件格式的img，挂载到loop设备，然后将根文件系统中的内容复制进去。</p>
+<p>1 umount ubuntu22.04-arm64/dev<br>
+2 umount ubuntu22.04-arm64/proc<br>
+3 umount ubuntu22.04-arm64/sys<br>
+4 qemu-img create -f raw rootfs.img 2G<br>
+5 mkfs.ext4 rootfs.img<br>
+6 mkdir -p /mnt/image &#x26;&#x26; mount -o loop rootfs.img /mnt/image<br>
+7 # 假设当前工作目录是根文件系统的上一级目录<br>
+8 cp -a ubuntu22.04-arm64/* /mnt/image/<br>
+9 umount /mnt/image/</p>
+<p>这样就在x86_64架构机器上制作好了一个arm64架构的ext4 image</p>
+<h2>其他尝试和操作失误</h2>
+<ol>
+<li>尝试使用Ubuntu cloud image制作rootfs，制作过程和用Ubuntu Base基本一致，但是在qemu使用该文件系统登录时遇到了问题。Ubuntu cloud image没有默认的用户和密码，并且默认不允许用户密码登录，而是使用ssh密钥登录。至于怎么给Ubuntu cloud image设置用户和密码没有单独研究</li>
+<li>我制作该文件系统的环境是Windows下的VMware虚拟机，之前尝试使用Windows下的WSL，在执行chroot到arm64的rootfs这一步出现问题，即使将qemu-aarch64-static复制到rootfs/usr/bin中也不能chroot进去，依然报错/bin/bash exec format error。</li>
+<li>还尝试过使用容器构建，但是因为需要mount -o loop，所以容器需要含有privilege参数，由于我的容器没有该特权，而赋予这个参数需要重新创建容器，于是没有选择这个方式构建。</li>
+<li>如果没有umount之前挂载的/dev /proc /sys等设备就将根文件系统复制到ext4 image挂载的目录中，将会占用大量的磁盘空间，2G 的image可能不够用。另外可能也会导致不必要的错误，所以一定记住要先umount，保持rootfs的整洁，然后再复制。</li>
+</ol>
+</div><footer class="article_footer__5JN_G"><div class="article_navigation__fJhBJ"><a class="article_backButton__FZQSF" href="/blog">返回文章列表</a></div></footer></article></main><footer class="footer"><p>© 2024 个人博客. All rights reserved.</p></footer></div></div><script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"article":{"id":"根据Ubuntu22.04-base制作arm64架构的ext4 image文件系统供QEMU使用","contentHtml":"\u003ch2\u003e参考资料\u003c/h2\u003e\n\u003cp\u003ehttps://github.com/wincle626/Prepare_Ubuntu_Rootfs_for_Aarch64_on_x86_Host​\u003cbr\u003e\nhttps://coldnew.github.io/1ad4bf6d/\u003cbr\u003e\nhttps://developer.aliyun.com/article/1172124\u003cbr\u003e\nhttps://www.cnblogs.com/wsg1100/p/13127636.html\u003cbr\u003e\nhttps://blog.csdn.net/u013113549/article/details/127337506\u003c/p\u003e\n\u003ch3\u003e下载Ubuntu22.04-base文件系统\u003c/h3\u003e\n\u003cp\u003e浏览器直接搜索Ubuntu22.04 base arm64，基本上就能找到对应的文件系统压缩包在https://cdimage.ubuntu.com/ubuntu-base/releases/22.04/release/这里能找到22.04的根文件系统\u003c/p\u003e\n\u003cp\u003e这些操作都需要在root下执行，并且全程工作环境在/root/rootfs（chroot之前）和/（chroot之后）\u003c/p\u003e\n\u003cp\u003e1 cd \u0026#x26;\u0026#x26; mkdir rootfs \u0026#x26;\u0026#x26; cd rootfs\u003cbr\u003e\n2 wget https://cdimage.ubuntu.com/ubuntu-base/releases/22.04/release/ubuntu\u003cbr\u003e\nbase-22.04-base-arm64.tar.gz\u003cbr\u003e\n3 mkdir ubuntu22.04-arm64 \u0026#x26;\u0026#x26; tar -xvf ubuntu-base-22.04-base-arm64.tar.gz -C\u003cbr\u003e\nubuntu22.04-arm64\u003cbr\u003e\n4 apt update \u0026#x26;\u0026#x26; apt install qemu-utils qemu-user-static qemu\u003cbr\u003e\n5\u003cbr\u003e\n6 # 这一步是为了让x86_64机器可以chroot到arm64的rootfs中；如果架构一致，则不需要执行\u003cbr\u003e\n7 cp /usr/bin/qemu-aarch64-static ubuntu22.04-arm64/usr/bin/\u003cbr\u003e\n8\u003cbr\u003e\n9 mount --bind /dev ubuntu22.04-arm64/dev\u003cbr\u003e\n10 mount -t proc proc ubuntu22.04-arm64/proc\u003cbr\u003e\n11 mount -t sysfs sysfs ubuntu22.04-arm64/sys\u003cbr\u003e\n12 cp -b /etc/resolv.conf ubuntu22.04-arm64/etc/resolv.conf\u003cbr\u003e\n13 chroot ubuntu22.04-arm64\u003cbr\u003e\n1 apt update \u0026#x26;\u0026#x26; apt upgrade -y\u003cbr\u003e\n2 useradd -b '/bin/bash' -m $-\\mathsf{G}$ adm,sudo \u003cbr\u003e\n3 passwd root\u003cbr\u003e\n4 passwd \u003cbr\u003e\n5 # 如果还需要安装别的环境，在exit之前操作，安装到rootfs中\u003cbr\u003e\n6 exit\u003c/p\u003e\n\u003cp\u003e退出根文件系统，先把前面mount的设备umount，之后创建ext4文件格式的img，挂载到loop设备，然后将根文件系统中的内容复制进去。\u003c/p\u003e\n\u003cp\u003e1 umount ubuntu22.04-arm64/dev\u003cbr\u003e\n2 umount ubuntu22.04-arm64/proc\u003cbr\u003e\n3 umount ubuntu22.04-arm64/sys\u003cbr\u003e\n4 qemu-img create -f raw rootfs.img 2G\u003cbr\u003e\n5 mkfs.ext4 rootfs.img\u003cbr\u003e\n6 mkdir -p /mnt/image \u0026#x26;\u0026#x26; mount -o loop rootfs.img /mnt/image\u003cbr\u003e\n7 # 假设当前工作目录是根文件系统的上一级目录\u003cbr\u003e\n8 cp -a ubuntu22.04-arm64/* /mnt/image/\u003cbr\u003e\n9 umount /mnt/image/\u003c/p\u003e\n\u003cp\u003e这样就在x86_64架构机器上制作好了一个arm64架构的ext4 image\u003c/p\u003e\n\u003ch2\u003e其他尝试和操作失误\u003c/h2\u003e\n\u003col\u003e\n\u003cli\u003e尝试使用Ubuntu cloud image制作rootfs，制作过程和用Ubuntu Base基本一致，但是在qemu使用该文件系统登录时遇到了问题。Ubuntu cloud image没有默认的用户和密码，并且默认不允许用户密码登录，而是使用ssh密钥登录。至于怎么给Ubuntu cloud image设置用户和密码没有单独研究\u003c/li\u003e\n\u003cli\u003e我制作该文件系统的环境是Windows下的VMware虚拟机，之前尝试使用Windows下的WSL，在执行chroot到arm64的rootfs这一步出现问题，即使将qemu-aarch64-static复制到rootfs/usr/bin中也不能chroot进去，依然报错/bin/bash exec format error。\u003c/li\u003e\n\u003cli\u003e还尝试过使用容器构建，但是因为需要mount -o loop，所以容器需要含有privilege参数，由于我的容器没有该特权，而赋予这个参数需要重新创建容器，于是没有选择这个方式构建。\u003c/li\u003e\n\u003cli\u003e如果没有umount之前挂载的/dev /proc /sys等设备就将根文件系统复制到ext4 image挂载的目录中，将会占用大量的磁盘空间，2G 的image可能不够用。另外可能也会导致不必要的错误，所以一定记住要先umount，保持rootfs的整洁，然后再复制。\u003c/li\u003e\n\u003c/ol\u003e\n","title":"根据Ubuntu22.04-base制作arm64架构的ext4image文件系统供QEMU使用","date":"2024-9-23","category":"QEMU","tags":["QEMU","Ubuntu","ext4","file system"],"summary":"根据Ubuntu22.04-base制作arm64架构的ext4image文件系统供QEMU使用","views":0}},"__N_SSG":true},"page":"/blog/[id]","query":{"id":"根据Ubuntu22.04-base制作arm64架构的ext4 image文件系统供QEMU使用"},"buildId":"20UMOGqztqylNLBnC72Ga","isFallback":false,"gsp":true,"scriptLoader":[]}</script></body></html>
